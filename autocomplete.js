@@ -14,10 +14,10 @@
 // var $ = require('jquery');
 // var _ = require('lodash');
 
-this.AutoCompleter = (function() {
+this.Autocompleter = (function() {
   'use strict';
 
-  function AutoCompleter($element, options) {
+  function Autocompleter($element, options) {
     // `$element` is the jQuery element Autocompleter is attached to.
     // It is a form that contains an `input[text]`
     this.$element = $element;
@@ -25,6 +25,8 @@ this.AutoCompleter = (function() {
     this.$input = $element.find('input[type=text]');
     // `$list` is the DOM representation of `elements`
     this.$list = $('<ul/>').addClass('list');
+    // `$listElements is the cached version of each DOM element`
+    this.$listElements = [];
 
     // `queries`: array of objects
     // Single Query:
@@ -61,20 +63,20 @@ this.AutoCompleter = (function() {
     var defaultOptions = {
       actionUrl: this.$element.attr('action'),
       throttleTime: 500,
-      resultKey: 'results',
+      resultKey: false,
       elementContentKey: 'latin',
-      elementScoreKey: 'score'
+      elementScoreKey: '_score'
     };
 
-    this.options = _.defaults(options, defaultOptions);
+    this.options = _.defaults(defaultOptions, options);
 
 
 
     // Some class constant
-    this.UPARROWKEY = 32;
-    this.DOWNARROWKEY = 36;
-    this.ENTERKEY = 32;
-    this.ESCKEY = 57;
+    this.UPARROWKEY = 38;
+    this.DOWNARROWKEY = 40;
+    this.ENTERKEY = 13;
+    this.ESCKEY = 27;
 
     this.BOOSTSCORE = 1;
   }
@@ -84,34 +86,19 @@ this.AutoCompleter = (function() {
     if (this.$input.length) {
       // Inject the $list element
       this.$element.append(this.$list);
+      this.bindEvents();
 
     }
   };
 
 
-  // Autocompleter.prototype.initLocalStorage = function () {
-  //   if (window.localStorage) {
-  //     this.localStorage = window.localStorage;
-  //   }
-  // };
-
-  // Autocompletere.prototype.emptyLocalStorage = function () {
-  //   if (this.localStorage) {
-  //     _.each(this.localStorage, function(i) {
-  //       var element = JSON.parse(this.localStorage.getItem(this.localStorage.key(i)));
-  //       if (element.expiration < Date.now()) {
-  //         this.localStorage.
-  //       }
-  //     });
-  //   }
-  // };
-
   // `keydownProxy` routes to specific callback via keycode
   Autocompleter.prototype.keydownProxy = function (e) {
-    if ((e.keyCode === this.UPARROW) || (e.keycode === this.DOWNARROW)) {
-      this.keydownArrows();
-    } else if (e.keyCode === this.ENTERKEY) {
-    } else if (e.keyCode === this.ESCKEY) {
+    if ((e.which === this.UPARROWKEY) || (e.which === this.DOWNARROWKEY)) {
+      this.keydownArrows(e);
+    } else if (e.which === this.ENTERKEY) {
+      e.preventDefault();
+    } else if (e.which === this.ESCKEY) {
       this.keydownEsc(e);
     } else {
       this.keydownOther(e);
@@ -153,9 +140,10 @@ this.AutoCompleter = (function() {
   // `keydownArrows` select results with arrows
   Autocompleter.prototype.keydownArrows = function (e) {
     var possibleIndex;
-    var toAdd = (e.keyCode === this.UPARROWKEY) ? -1 : 1;
+    var toAdd = (e.which === this.UPARROWKEY) ? -1 : 1;
     possibleIndex = this.currentIndex + toAdd;
-    if ((possibleIndex >= 0) && (possibleIndex <= this.elements.lenght)) {
+    console.log(possibleIndex);
+    if ((possibleIndex >= 0) && (possibleIndex <= (this.elements.length - 1))) {
       this.currentIndex = possibleIndex;
       this.updateCurrentElementInDOM();
     }
@@ -163,8 +151,8 @@ this.AutoCompleter = (function() {
 
   // updateCurrentElementInDom handles the highlighting of the `currentElement` in the list
   Autocompleter.prototype.updateCurrentElementInDOM = function () {
-    var $toHighlight = this.$list.get(this.currentIndex);
-    this.$list.not($toHighlight).removeClass('current');
+    var $toHighlight = $(this.$listElements.get(this.currentIndex));
+    this.$listElements.not($toHighlight).removeClass('current');
     $toHighlight.addClass('current');
   };
 
@@ -196,6 +184,7 @@ this.AutoCompleter = (function() {
     temporaryElements = this.sortTemporaryElements(temporaryElements);
     this.elements = temporaryElements;
     this.updateQueries();
+    this.updateDom();
 
   };
   
@@ -207,46 +196,52 @@ this.AutoCompleter = (function() {
       this.$list.append(
         $('<li>').html(el.formattedContent)
       );
-    }); 
+    }, this); 
+    this.$listElements = this.$list.find('li');
   };
 
 
   // `normalizeElements` select the array of results according the `options.resultKey`
   Autocompleter.prototype.normalizeElements = function (response) {
-    var temporaryElements = response[this.options.resultKey];
-    return temporaryElements;
+    var temporaryElements;
+    if (this.options.resultKey) {
+      temporaryElements = response[this.options.resultKey];
+    } else {
+      temporaryElements = response;
+    }
+    return JSON.parse(temporaryElements);
 
   };
 
   // `boostAndFormat` take a temporary elements array.
   // Boost the score of the exact matches and format content according current query
   Autocompleter.prototype.boostAndFormat = function (temporaryElements) {
-    var input = this.input;
     temporaryElements = _.map(temporaryElements, function(element) {
-      if (element[this.options.elementsContentKey].indexOf(input)) {
+      if (element[this.options.elementContentKey].indexOf(this.input)) {
         // The element contains the exact match of the input
         // Its score will be boosted and match highlighted
-        element[this.options.elementScorekey] = element[this.options.elementScoreKey] + this.BOOSTSCORE;
-        element.formattedContent = element[this.options.elementContentKey].replace(input, '<span>' + input + '</span>');
+        element[this.options.elementScoreKey] = element[this.options.elementScoreKey] + this.BOOSTSCORE;
+        element.formattedContent = element[this.options.elementContentKey].replace(this.input, '<span>' + this.input + '</span>');
       } else {
         element.formattedContent = element[this.options.elementContentKey];
       }
-    });
+      return element;
+    }, this);
     return temporaryElements;
   };
 
   // `sortTemporaryElements` sort elements by score
   Autocompleter.prototype.sortTemporaryElements = function(temporaryElements) {
     return _.sortBy(temporaryElements, function (element) {
-      return element.score;
-    }); 
+      return element[this.options.elementScoreKey];
+    }, this); 
   };
 
   // `updateQueries` store the current query and result in the queries array
   // TODO: Design an error strategy
   Autocompleter.prototype.updateQueries = function () {
 
-    var hash = this.indexer(this.value);
+    var hash = this.indexer(this.input);
     if (!this.queries[hash]) {
       var query = {
         query: this.value,
@@ -263,7 +258,7 @@ this.AutoCompleter = (function() {
   Autocompleter.prototype.select = function (force) {
 
     var resultCurrent = this.elements[this.currentIndex];
-    this.$input.val(resultCurrent[this.options.elementcontentKey]);
+    this.$input.val(resultCurrent[this.options.elementContentKey]);
     if (force) {
       this.$element.submit();
     }
@@ -274,20 +269,21 @@ this.AutoCompleter = (function() {
   // It calls `select` forcing the form submission.
   Autocompleter.prototype.selectByClick = function(e) {
     var $target = $(e.target);
-    var currentIndex = this.$list.index($target);
+    var currentIndex = this.$listElements.index($target);
     this.currentIndex = currentIndex;
     this.select(true);
   };
 
   // `bindEvents()` is responsible to attach DOM events
   Autocompleter.prototype.bindEvents = function () {
-    this.$input.on('keydown', _.bind(this.keydownProxy, this));
+    this.$input.on('keyup', _.bind(this.keydownProxy, this));
+
+    this.$element.on('submit', function(e) { e.preventDefault(); });
 
     // Use delegation to attach click event once
     this.$list.on('click', 'li', _.bind(this.selectByClick, this));
   };
-  console.log(Autocompleter.init());
 
-  return AutoCompleter;
+  return Autocompleter;
 })();
 
