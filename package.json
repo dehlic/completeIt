@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "browserify": "11.2.0"
+  },
+  "dependencies": {
+    "lodash": "^3.10.1",
+    "jquery": "^2.1.4"
+  }
+}
+

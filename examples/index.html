@@ -1,0 +1,18 @@
+<html>
+  <head>
+  </head>
+  <body>
+    <form id="autocomplete" action="example.json">
+      <input type="text" name="q" placeholder="search">
+    </form>
+    <script src="../node_modules/jquery/dist/jquery.js"></script>
+    <script src="../build/autocomplete.js"></script>
+    <script>
+      $(function() {
+        var $form = $('#autocomplete');
+        var autocompleter = new Autocompleter($form);
+        autocompleter.init();
+      });
+    </script>
+  </body>
+</html>
