@@ -6,11 +6,14 @@
       <input type="text" name="q" placeholder="search">
     </form>
     <script src="../node_modules/jquery/dist/jquery.js"></script>
-    <script src="../build/autocomplete.js"></script>
+    <script src="../node_modules/lodash/index.js"></script>
+    <script src="../autocomplete.js"></script>
     <script>
       $(function() {
         var $form = $('#autocomplete');
-        var autocompleter = new Autocompleter($form);
+        var autocompleter = new Autocompleter($form, {
+         resultKey: false 
+        });
         autocompleter.init();
       });
     </script>
