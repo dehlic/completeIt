@@ -1,10 +1,24 @@
 {
-  "devDependencies": {
-    "browserify": "11.2.0"
+  "name": "CompleteIt.js",
+  "description": "A simple autocomplete plugin.",
+  "author": "Lucio Baglione (coire1@gmail.com)",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dehlic/completeIt"
+  },
+  "scripts": {
+    "start": "brunch watch --server"
   },
   "dependencies": {
-    "lodash": "^3.10.1",
-    "jquery": "^2.1.4"
+    "javascript-brunch": ">= 1.0 < 1.9",
+    "css-brunch": ">= 1.0 < 1.9",
+    "uglify-js-brunch": ">= 1.0 < 1.9",
+    "clean-css-brunch": ">= 1.0 < 1.9",
+    "auto-reload-brunch": ">= 1.0 < 1.9"
+  },
+  "devDependencies": {
+    "brunch": "^1.8.5",
+    "sass-brunch": "^1.9.1"
   }
 }
-

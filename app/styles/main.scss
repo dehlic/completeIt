@@ -1,0 +1,31 @@
+$selectred-color: #d6d6ff;
+
+.complete-it {
+  position: relative;
+  .list {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    list-style: none;
+    padding: 0;
+    display: none;
+    
+    &.open {
+      display: block;
+    }
+
+    li {
+      font-weight: 700;
+      cursor: pointer;
+
+      &.current {
+        background-color: $selectred-color;
+      }
+
+      span {
+        font-weight: 300;
+        pointer-events: none;
+      }
+    }
+  }
+}

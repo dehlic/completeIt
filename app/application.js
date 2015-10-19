@@ -10,14 +10,54 @@
  * jQuery will be probably dropped.
 */
 
-// Load dependencies
-// var $ = require('jquery');
-// var _ = require('lodash');
+'use strict';
 
-this.CompleteIt = (function() {
-  'use strict';
+var CompleteIt = {
 
-  function CompleteIt($element, options) {
+  // `$listElements is the cached version of each DOM element`
+  $listElements: [],
+
+  // `queries`: array of objects
+  // Single Query:
+  // {
+  //  query: String - the query
+  //  elements: Array of objects (same form of `elements`)
+  // }
+  // `queries` is an array of queries already performed, useful for cache.
+  queries: [],
+
+  // `elements`: array of objects
+  // Single element:
+  // {
+  //  content: String - The content of the element
+  //  score: Int - The score distance between element and query
+  //  formattedContent - The formatted `content` string
+  // }
+  // `elements` is an array that contains the current elements of the list
+  elements: [],
+
+  // `input` is the current input value
+  input: '',
+
+  // `cachedInput` is used to restore old input when users cancel
+  cachedInput: '',
+
+  // `currentIndex` is the index of the selected element in `elements`
+  currentIndex: 0,
+
+
+
+
+  // Some class constant
+  UPARROWKEY: 38,
+  DOWNARROWKEY: 40,
+  ENTERKEY: 13,
+  ESCKEY: 27,
+
+  BOOSTSCORE: 1,
+
+  // Function to initiliaze CompleteIt
+  init: function ($element, options) {
     // `$element` is the jQuery element CompleteIt is attached to.
     // It is a form that contains an `input[text]`
     this.$element = $element;
@@ -25,37 +65,6 @@ this.CompleteIt = (function() {
     this.$input = $element.find('input[type=text]');
     // `$list` is the DOM representation of `elements`
     this.$list = $('<ul/>').addClass('list');
-    // `$listElements is the cached version of each DOM element`
-    this.$listElements = [];
-
-    // `queries`: array of objects
-    // Single Query:
-    // {
-    //  query: String - the query
-    //  elements: Array of objects (same form of `elements`)
-    // }
-    // `queries` is an array of queries already performed, useful for cache.
-    this.queries = [];
-
-    // `elements`: array of objects
-    // Single element:
-    // {
-    //  content: String - The content of the element
-    //  score: Int - The score distance between element and query
-    //  formattedContent - The formatted `content` string
-    // }
-    // `elements` is an array that contains the current elements of the list
-    this.elements = [];
-
-    // `input` is the current input value
-    this.input = '';
-
-    // `cachedInput` is used to restore old input when users cancel
-    this.cachedInput = '';
-
-    // `currentIndex` is the index of the selected element in `elements`
-    this.currentIndex = 0;
-
 
     // `options` object contains:
     // `actionUrl`: the url to make autocomplete queries (defaults to form action)
@@ -70,38 +79,29 @@ this.CompleteIt = (function() {
       throttleTime: 500,
       resultKey: 'results',
       elementContentKey: 'content',
-      elementScoreKey: '_score',
+      elementScoreKey: false,
       crossDomain: false,
       cookies: false
     };
 
+    options = (options) ? options : {};
+
     this.options = _.defaults(options, defaultOptions);
 
-    // Some class constant
-    this.UPARROWKEY = 38;
-    this.DOWNARROWKEY = 40;
-    this.ENTERKEY = 13;
-    this.ESCKEY = 27;
-
-    this.BOOSTSCORE = 1;
-  }
-
-  // Function to initiliaze CompleteIt
-  CompleteIt.prototype.init = function () {
     if (this.$input.length) {
       // Inject the $list element
       this.$element.append(this.$list);
-      // Assing `.complete-it` class to form (to style elements)
+      // Assign `.complete-it` class to form (to style elements)
       this.$element.addClass('complete-it');
       // Bind events
       this.bindEvents();
 
     }
-  };
+  },
 
 
   // `keydownProxy` routes to specific callback via keycode
-  CompleteIt.prototype.keydownProxy = function (e) {
+  keydownProxy: function (e) {
     e.stopPropagation();
     if ((e.which === this.UPARROWKEY) || (e.which === this.DOWNARROWKEY)) {
       this.keydownArrows(e);
@@ -112,11 +112,11 @@ this.CompleteIt = (function() {
     } else {
       this.keydownOther(e);
     }
-  };
+  },
 
   // `keydownOther` is triggered when use types text in the input
   // Perform a new query if there isn't a cached query
-  CompleteIt.prototype.keydownOther = function () {
+  keydownOther: function () {
     // Update current `input` value
     // and cache a genuine oldInput
     var input = this.$input.val().trim();
@@ -139,11 +139,11 @@ this.CompleteIt = (function() {
       }
     }
 
-  };
+  },
 
 
   // `performQuery` is a reference to throttle the ajax query
-  CompleteIt.prototype.performQuery = function () {
+  performQuery: function () {
     $.ajax({
       url: this.options.actionUrl,
       success: _.bind(this.ajaxCallback, this),
@@ -153,15 +153,15 @@ this.CompleteIt = (function() {
         q: this.input
       }
     });
-  };
+  },
 
   // `keydownEsc` restore the old input value and close the $list
-  CompleteIt.prototype.keydownEsc = function () {
+  keydownEsc: function () {
     this.unselect();
-  };
+  },
 
   // `keydownArrows` select results with arrows
-  CompleteIt.prototype.keydownArrows = function (e) {
+  keydownArrows: function (e) {
     var possibleIndex;
     var toAdd = (e.which === this.UPARROWKEY) ? -1 : 1;
     possibleIndex = this.currentIndex + toAdd;
@@ -173,22 +173,22 @@ this.CompleteIt = (function() {
     } else {
       this.unselect();
     }
-  };
+  },
 
   // updateCurrentElementInDom handles the highlighting of the `currentElement` in the list
-  CompleteIt.prototype.updateCurrentElementInDOM = function () {
+  updateCurrentElementInDOM: function () {
     var $toHighlight = false;
     if (this.currentIndex > -1) {
       $toHighlight = $(this.$listElements.get(this.currentIndex));
       $toHighlight.addClass('current');
     }
     this.$listElements.not($toHighlight).removeClass('current');
-  };
+  },
 
   //
   // `indexer` return a valid unique key for the query
   // http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
-  CompleteIt.prototype.indexer = function (query) {
+  indexer: function (query) {
     var hash = 0;
     var i;
     var chr;
@@ -202,23 +202,25 @@ this.CompleteIt = (function() {
       hash |= 0; // Convert to 32bit integer
     }
     return hash;
-  };
+  },
 
   // `ajaxCallback` is the callback of the ajax request
   // take the dirty results, boost resulats that contains anx exact match,
   // format results highlighting the common part and sort them by score.
-  CompleteIt.prototype.ajaxCallback = function (response) {
+  ajaxCallback: function (response) {
     var temporaryElements = this.normalizeElements(response);
     temporaryElements = this.boostAndFormat(temporaryElements);
-    temporaryElements = this.sortTemporaryElements(temporaryElements);
+    if (this.options.elementScoreKey) {
+      temporaryElements = this.sortTemporaryElements(temporaryElements);
+    }
     this.elements = temporaryElements;
     this.updateQueries();
     this.updateDom();
 
-  };
+  },
   
   // `UpdateDom` empty the listin the DOM and fill it with the new elements
-  CompleteIt.prototype.updateDom = function () {
+  updateDom: function () {
     this.currentIndex = -1;
     this.$list.removeClass('open').empty();
     _.each(this.elements, function (el) {
@@ -228,11 +230,11 @@ this.CompleteIt = (function() {
     }, this); 
     this.$list.addClass('open');
     this.$listElements = this.$list.find('li');
-  };
+  },
 
 
   // `normalizeElements` select the array of results according the `options.resultKey`
-  CompleteIt.prototype.normalizeElements = function (response) {
+  normalizeElements: function (response) {
     var temporaryElements;
     if (this.options.resultKey) {
       temporaryElements = response[this.options.resultKey];
@@ -241,18 +243,20 @@ this.CompleteIt = (function() {
     }
     return temporaryElements;
 
-  };
+  },
 
   // `boostAndFormat` take a temporary elements array.
   // Boost the score of the exact matches and format content according current query
-  CompleteIt.prototype.boostAndFormat = function (temporaryElements) {
+  boostAndFormat: function (temporaryElements) {
     temporaryElements = _.map(temporaryElements, function(element) {
       // Lowercase string and remove non-character to perform an exact match
       element.formattedContent = element[this.options.elementContentKey].toLowerCase().replace(/[^a-zA-Z ]/g, '');
       if (element.formattedContent.indexOf(this.input) > -1) {
         // The element contains the exact match of the input
         // Its score will be boosted and match highlighted
-        element[this.options.elementScoreKey] = element[this.options.elementScoreKey] + this.BOOSTSCORE;
+        if (this.options.elementScoreKey) {
+          element[this.options.elementScoreKey] = element[this.options.elementScoreKey] + this.BOOSTSCORE;
+        }
         element.formattedContent = element.formattedContent.replace(this.input, '<span>' + this.input + '</span>');
       }
       // delete `id` from objects (it is not used). In this way we can store a lighter
@@ -261,20 +265,20 @@ this.CompleteIt = (function() {
       return element;
     }, this);
     return temporaryElements;
-  };
+  },
 
   // `sortTemporaryElements` sort elements by score
-  CompleteIt.prototype.sortTemporaryElements = function(temporaryElements) {
+  sortTemporaryElements: function(temporaryElements) {
     return _.sortBy(temporaryElements, function (element) {
       // Use `-` to reverse order (from ASC to DESC)
       // We want first the result with higher score
       return  - element[this.options.elementScoreKey];
     }, this); 
-  };
+  },
 
   // `updateQueries` store the current query and result in the queries array
   // TODO: Design an error strategy
-  CompleteIt.prototype.updateQueries = function () {
+  updateQueries: function () {
     var hash = this.indexer(this.input);
     if (!this.queries[hash]) {
       var query = {
@@ -286,53 +290,53 @@ this.CompleteIt = (function() {
       console.log('Error: this query is already present: ' + hash);
       // Error strategy
     }
-  };
+  },
 
   // `select` executes when user select a result, clicking or using arrows
   // if `force` is true the form will be submitted (to use with click)
-  CompleteIt.prototype.select = function (force) {
+  select: function (force) {
 
     var resultCurrent = this.elements[this.currentIndex];
     this.$input.val(resultCurrent[this.options.elementContentKey]);
     if (force) {
       this.$element.submit();
     }
-  };
+  },
 
   // `unselect` reset the `currentIndex` to default value and restore the
   // input value.
-  CompleteIt.prototype.unselect = function () {
+  unselect: function () {
     this.$list.removeClass('open');
     this.unselectIndex();
     this.$input.val(this.cachedInput);
-  };
+  },
 
   // `selectByHover` is the callback for the `mouseenter` event on a list element.
   // It sets the `currentIndex` according the index of the element that gets hovered
-  CompleteIt.prototype.selectByHover = function (e) {
+  selectByHover: function (e) {
     var $target = $(e.target);
     var currentIndex = this.$listElements.index($target);
     this.currentIndex = currentIndex;
     this.updateCurrentElementInDOM();
-  };
+  },
 
   // `unselectIndex` resets `currentIndex`
   // It is also the callback for the `mouseleave` event on a list element.
-  CompleteIt.prototype.unselectIndex = function () {
+  unselectIndex: function () {
     this.currentIndex = -1;
     this.updateCurrentElementInDOM();
-  };
+  },
 
   // `selectByClick` is the callback for the click on a list elements
   // It sets the `currentIndex` according the index of the element that gets clicked
   // It calls `select` forcing the form submission.
-  CompleteIt.prototype.selectByClick = function (e) {
+  selectByClick: function (e) {
     this.selectByHover(e);
     this.select(true);
-  };
+  },
 
   // `bindEvents()` is responsible to attach DOM events
-  CompleteIt.prototype.bindEvents = function () {
+  bindEvents: function () {
     // Listen for `performQuery` to make ajax query
     // this event is throttled
     this.$element.on('performQuery', _.throttle(
@@ -353,8 +357,9 @@ this.CompleteIt = (function() {
     this.$list.on('click', 'li', _.bind(this.selectByClick, this));
     this.$list.on('mouseenter', 'li', _.bind(this.selectByHover, this));
     this.$list.on('mouseleave', 'li', _.bind(this.unselectIndex, this));
-  };
+  }
+};
 
-  return CompleteIt;
-})();
+module.exports = CompleteIt;
+
 
