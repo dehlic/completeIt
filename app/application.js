@@ -65,6 +65,9 @@ var CompleteIt = {
     this.$input = $element.find('input[type=text]');
     // `$list` is the DOM representation of `elements`
     this.$list = $('<ul/>').addClass('list');
+    // `$ghostInput` is the jQuery element used to display the first
+    // exact autocompleted result.
+    this.$ghostInput = this.$input.clone().attr('disabled', true).attr('placeholder', '').addClass('ghost-input');
 
     // `options` object contains:
     // `actionUrl`: the url to make autocomplete queries (defaults to form action)
@@ -91,6 +94,8 @@ var CompleteIt = {
     if (this.$input.length) {
       // Inject the $list element
       this.$element.append(this.$list);
+      // Inject the $ghostInput element
+      this.$element.append(this.$ghostInput);
       // Assign `.complete-it` class to form (to style elements)
       this.$element.addClass('complete-it');
       // Bind events
@@ -119,9 +124,10 @@ var CompleteIt = {
   keydownOther: function () {
     // Update current `input` value
     // and cache a genuine oldInput
-    var input = this.$input.val().trim();
+    var input = this.$input.val();
+    this.updateGhostInput(input);
     // use a lowerCase input for internal comparision but cache the original.
-    this.input = input.toLowerCase();
+    this.input = input.trim().toLowerCase();
     // Process stuff just if `input` is not blank
     if (this.input.length) {
       this.cachedInput = input;
@@ -216,7 +222,6 @@ var CompleteIt = {
     this.elements = temporaryElements;
     this.updateQueries();
     this.updateDom();
-
   },
   
   // `UpdateDom` empty the listin the DOM and fill it with the new elements
@@ -230,6 +235,23 @@ var CompleteIt = {
     }, this); 
     this.$list.addClass('open');
     this.$listElements = this.$list.find('li');
+    this.ghostInputApparition();
+  },
+
+  // `updateGhostInput` is used to synchronize input and ghost input
+  updateGhostInput: function (value) {
+    this.$ghostInput.val(value);
+  },
+
+  // `ghostInputAppartition` shows the ghost input if the first autcompleted element
+  // starts as `input`.
+  ghostInputApparition: function () {
+    if (this.elements.length) {
+      var firstElementValue = this.elements[0][this.options.elementContentKey].toLowerCase().replace(/[^a-zA-Z ]/g, '');
+      if (firstElementValue.indexOf(this.input) === 0) {
+        this.updateGhostInput(firstElementValue);
+      }
+    }
   },
 
 
@@ -300,6 +322,7 @@ var CompleteIt = {
     if (this.currentIndex > -1) {
       var resultCurrent = this.elements[this.currentIndex];
       this.$input.val(resultCurrent[this.options.elementContentKey]);
+      this.updateGhostInput('');
     }
     if (force) {
       this.submitPrevented = false;

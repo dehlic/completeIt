@@ -28,4 +28,16 @@ $selectred-color: #d6d6ff;
       }
     }
   }
+
+  input[type="text"] {
+    background-color: transparent;
+  }
+
+  .ghost-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    opacity: 0.8;
+  }
 }
