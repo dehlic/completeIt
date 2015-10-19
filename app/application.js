@@ -45,8 +45,8 @@ var CompleteIt = {
   // `currentIndex` is the index of the selected element in `elements`
   currentIndex: 0,
 
-
-
+  // `submitPrevented` is a flag to prevent form submission
+  submitPrevented: true,
 
   // Some class constant
   UPARROWKEY: 38,
@@ -106,7 +106,7 @@ var CompleteIt = {
     if ((e.which === this.UPARROWKEY) || (e.which === this.DOWNARROWKEY)) {
       this.keydownArrows(e);
     } else if (e.which === this.ENTERKEY) {
-      e.preventDefault();
+      this.select(true);
     } else if (e.which === this.ESCKEY) {
       this.keydownEsc(e);
     } else {
@@ -296,9 +296,13 @@ var CompleteIt = {
   // if `force` is true the form will be submitted (to use with click)
   select: function (force) {
 
-    var resultCurrent = this.elements[this.currentIndex];
-    this.$input.val(resultCurrent[this.options.elementContentKey]);
+    // Set the input value based on `currentIndex` or don't touch it.
+    if (this.currentIndex > -1) {
+      var resultCurrent = this.elements[this.currentIndex];
+      this.$input.val(resultCurrent[this.options.elementContentKey]);
+    }
     if (force) {
+      this.submitPrevented = false;
       this.$element.submit();
     }
   },
@@ -335,6 +339,14 @@ var CompleteIt = {
     this.select(true);
   },
 
+  // `submitHandler` is the callback for the submit event on the form.
+  // It prevents the submit if `submitPrevented` is true.
+  submitHandler: function (e) {
+    if (this.submitPrevented) {
+      e.preventDefault();
+    }
+  },
+
   // `bindEvents()` is responsible to attach DOM events
   bindEvents: function () {
     // Listen for `performQuery` to make ajax query
@@ -351,7 +363,7 @@ var CompleteIt = {
     // Listen for keyup events and use a proxy to handle them.
     this.$element.on('keyup', _.bind(this.keydownProxy, this));
 
-    this.$element.on('submit', function(e) { e.preventDefault(); });
+    this.$element.on('submit', _.bind(this.submitHandler, this));
 
     // Use delegation to attach click, mouseenter and mouseleave events once
     this.$list.on('click', 'li', _.bind(this.selectByClick, this));
