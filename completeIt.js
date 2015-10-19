@@ -56,16 +56,23 @@ this.CompleteIt = (function() {
     // `currentIndex` is the index of the selected element in `elements`
     this.currentIndex = 0;
 
+
     // `options` object contains:
     // `actionUrl`: the url to make autocomplete queries (defaults to form action)
     // `throttleTime`: the minimum interval between remote queries (defaults to 500ms)
     // `resultKey`: is the key in the ajax response object that contains autocomplete results
+    // `elementContentKey`: is the key in each result element that contains the autocomplete text
+    // `elementScoreKey`: is the key in each result element that contains the score used to order results
+    // `crossDomain`: expose jQuery Ajax option
+    // `cookies`: expose jQuery Ajax option
     var defaultOptions = {
       actionUrl: this.$element.attr('action'),
       throttleTime: 500,
       resultKey: 'results',
       elementContentKey: 'content',
-      elementScoreKey: '_score'
+      elementScoreKey: '_score',
+      crossDomain: false,
+      cookies: false
     };
 
     this.options = _.defaults(options, defaultOptions);
@@ -95,6 +102,7 @@ this.CompleteIt = (function() {
 
   // `keydownProxy` routes to specific callback via keycode
   CompleteIt.prototype.keydownProxy = function (e) {
+    e.stopPropagation();
     if ((e.which === this.UPARROWKEY) || (e.which === this.DOWNARROWKEY)) {
       this.keydownArrows(e);
     } else if (e.which === this.ENTERKEY) {
@@ -138,8 +146,8 @@ this.CompleteIt = (function() {
     $.ajax({
       url: this.options.actionUrl,
       success: _.bind(this.ajaxCallback, this),
-      crossDomain: true,
-      cookies: true,
+      crossDomain: this.options.crossDomain,
+      cookies: this.options.cookies,
       data: {
         q: this.input
       }
@@ -208,15 +216,16 @@ this.CompleteIt = (function() {
 
   };
   
-  // UpdateDom empty the listin the DOM and fill it with the new elements
+  // `UpdateDom` empty the listin the DOM and fill it with the new elements
   CompleteIt.prototype.updateDom = function () {
     this.currentIndex = -1;
-    this.$list.empty();
+    this.$list.removeClass('open').empty();
     _.each(this.elements, function (el) {
       this.$list.append(
         $('<li>').html(el.formattedContent)
       );
     }, this); 
+    this.$list.addClass('open');
     this.$listElements = this.$list.find('li');
   };
 
@@ -293,18 +302,31 @@ this.CompleteIt = (function() {
   // input value.
   CompleteIt.prototype.unselect = function () {
     this.$list.removeClass('open');
+    this.unselectIndex();
+    this.$input.val(this.cachedInput);
+  };
+
+  // `selectByHover` is the callback for the `mouseenter` event on a list element.
+  // It sets the `currentIndex` according the index of the element that gets hovered
+  CompleteIt.prototype.selectByHover = function (e) {
+    var $target = $(e.target);
+    var currentIndex = this.$listElements.index($target);
+    this.currentIndex = currentIndex;
+    this.updateCurrentElementInDOM();
+  };
+
+  // `unselectIndex` resets `currentIndex`
+  // It is also the callback for the `mouseleave` event on a list element.
+  CompleteIt.prototype.unselectIndex = function () {
     this.currentIndex = -1;
     this.updateCurrentElementInDOM();
-    this.$input.val(this.cachedInput);
   };
 
   // `selectByClick` is the callback for the click on a list elements
   // It sets the `currentIndex` according the index of the element that gets clicked
   // It calls `select` forcing the form submission.
-  CompleteIt.prototype.selectByClick = function(e) {
-    var $target = $(e.target);
-    var currentIndex = this.$listElements.index($target);
-    this.currentIndex = currentIndex;
+  CompleteIt.prototype.selectByClick = function (e) {
+    this.selectByHover(e);
     this.select(true);
   };
 
@@ -321,12 +343,15 @@ this.CompleteIt = (function() {
       }
     ));
 
+    // Listen for keyup events and use a proxy to handle them.
     this.$element.on('keyup', _.bind(this.keydownProxy, this));
 
     this.$element.on('submit', function(e) { e.preventDefault(); });
 
-    // Use delegation to attach click event once
+    // Use delegation to attach click, mouseenter and mouseleave events once
     this.$list.on('click', 'li', _.bind(this.selectByClick, this));
+    this.$list.on('mouseenter', 'li', _.bind(this.selectByHover, this));
+    this.$list.on('mouseleave', 'li', _.bind(this.unselectIndex, this));
   };
 
   return CompleteIt;
