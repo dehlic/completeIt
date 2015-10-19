@@ -63,14 +63,12 @@ this.CompleteIt = (function() {
     var defaultOptions = {
       actionUrl: this.$element.attr('action'),
       throttleTime: 500,
-      resultKey: false,
-      elementContentKey: 'latin',
+      resultKey: 'results',
+      elementContentKey: 'content',
       elementScoreKey: '_score'
     };
 
-    this.options = _.defaults(defaultOptions, options);
-
-
+    this.options = _.defaults(options, defaultOptions);
 
     // Some class constant
     this.UPARROWKEY = 38;
@@ -86,6 +84,9 @@ this.CompleteIt = (function() {
     if (this.$input.length) {
       // Inject the $list element
       this.$element.append(this.$list);
+      // Assing `.complete-it` class to form (to style elements)
+      this.$element.addClass('complete-it');
+      // Bind events
       this.bindEvents();
 
     }
@@ -110,25 +111,39 @@ this.CompleteIt = (function() {
   CompleteIt.prototype.keydownOther = function () {
     // Update current `input` value
     // and cache a genuine oldInput
-    this.input = this.$input.val();
-    this.cachedInput = this.input;
-    // Search current query in the array of queries already performed.
-    // the key is the hashed query
-    var cached = this.queries[this.indexer(this.input)];
-    if (cached) {
-      // The current query was already performed. Use that results as current
-      this.elements = cached.elements;
-      this.updateDom();
-    } else {
-      // The current query isn't cached. Perform a new query.
-      // TODO: the ajax request have to be throttled
-      $.ajax({
-        url: this.options.actionUrl,
-        success: _.bind(this.ajaxCallback, this)
-      });
-
+    this.input = this.$input.val().trim();
+    // Process stuff just if `input` is not blank
+    if (this.input.length) {
+      this.cachedInput = this.input;
+      // Search current query in the array of queries already performed.
+      // the key is the hashed query
+      var cached = this.queries[this.indexer(this.input)];
+      if (cached) {
+        // The current query was already performed. Use that results as current
+        this.elements = cached.elements;
+        this.updateDom();
+      } else {
+        // The current query isn't cached. Perform a new query.
+        // TODO: pass jquery ajax options
+        
+        this.$element.trigger('performQuery');
+      }
     }
 
+  };
+
+
+  // `performQuery` is a reference to throttle the ajax query
+  CompleteIt.prototype.performQuery = function () {
+    $.ajax({
+      url: this.options.actionUrl,
+      success: _.bind(this.ajaxCallback, this),
+      crossDomain: true,
+      cookies: true,
+      data: {
+        q: this.input
+      }
+    });
   };
 
   // `keydownEsc` restore the old input value and close the $list
@@ -142,7 +157,6 @@ this.CompleteIt = (function() {
     var possibleIndex;
     var toAdd = (e.which === this.UPARROWKEY) ? -1 : 1;
     possibleIndex = this.currentIndex + toAdd;
-    console.log(possibleIndex);
     if ((possibleIndex >= 0) && (possibleIndex <= (this.elements.length - 1))) {
       this.currentIndex = possibleIndex;
       this.updateCurrentElementInDOM();
@@ -209,7 +223,7 @@ this.CompleteIt = (function() {
     } else {
       temporaryElements = response;
     }
-    return JSON.parse(temporaryElements);
+    return temporaryElements;
 
   };
 
@@ -217,14 +231,17 @@ this.CompleteIt = (function() {
   // Boost the score of the exact matches and format content according current query
   CompleteIt.prototype.boostAndFormat = function (temporaryElements) {
     temporaryElements = _.map(temporaryElements, function(element) {
-      if (element[this.options.elementContentKey].indexOf(this.input)) {
+      // Lowercase string and remove non-character to perform an exact match
+      element.formattedContent = element[this.options.elementContentKey].toLowerCase().replace(/[^a-zA-Z ]/g, '');
+      if (element.formattedContent.indexOf(this.input) > -1) {
         // The element contains the exact match of the input
         // Its score will be boosted and match highlighted
         element[this.options.elementScoreKey] = element[this.options.elementScoreKey] + this.BOOSTSCORE;
-        element.formattedContent = element[this.options.elementContentKey].replace(this.input, '<span>' + this.input + '</span>');
-      } else {
-        element.formattedContent = element[this.options.elementContentKey];
+        element.formattedContent = element.formattedContent.replace(this.input, '<span>' + this.input + '</span>');
       }
+      // delete `id` from objects (it is not used). In this way we can store a lighter
+      // object.
+      delete element.id;
       return element;
     }, this);
     return temporaryElements;
@@ -233,22 +250,24 @@ this.CompleteIt = (function() {
   // `sortTemporaryElements` sort elements by score
   CompleteIt.prototype.sortTemporaryElements = function(temporaryElements) {
     return _.sortBy(temporaryElements, function (element) {
-      return element[this.options.elementScoreKey];
+      // Use `-` to reverse order (from ASC to DESC)
+      // We want first the result with higher score
+      return  - element[this.options.elementScoreKey];
     }, this); 
   };
 
   // `updateQueries` store the current query and result in the queries array
   // TODO: Design an error strategy
   CompleteIt.prototype.updateQueries = function () {
-
     var hash = this.indexer(this.input);
     if (!this.queries[hash]) {
       var query = {
-        query: this.value,
+        query: this.input,
         elements: this.elements
       };
       this.queries[hash] = query;
     } else {
+      console.log('Error: this query is already present: ' + hash);
       // Error strategy
     }
   };
@@ -276,7 +295,18 @@ this.CompleteIt = (function() {
 
   // `bindEvents()` is responsible to attach DOM events
   CompleteIt.prototype.bindEvents = function () {
-    this.$input.on('keyup', _.bind(this.keydownProxy, this));
+    // Listen for `performQuery` to make ajax query
+    // this event is throttled
+    this.$element.on('performQuery', _.throttle(
+      _.bind(this.performQuery, this),
+      this.options.throttleTime,
+      {
+        leading: true,
+        trailing: true
+      }
+    ));
+
+    this.$element.on('keyup', _.bind(this.keydownProxy, this));
 
     this.$element.on('submit', function(e) { e.preventDefault(); });
 
