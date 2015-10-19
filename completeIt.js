@@ -119,10 +119,12 @@ this.CompleteIt = (function() {
   CompleteIt.prototype.keydownOther = function () {
     // Update current `input` value
     // and cache a genuine oldInput
-    this.input = this.$input.val().trim();
+    var input = this.$input.val().trim();
+    // use a lowerCase input for internal comparision but cache the original.
+    this.input = input.toLowerCase();
     // Process stuff just if `input` is not blank
     if (this.input.length) {
-      this.cachedInput = this.input;
+      this.cachedInput = input;
       // Search current query in the array of queries already performed.
       // the key is the hashed query
       var cached = this.queries[this.indexer(this.input)];
@@ -132,8 +134,7 @@ this.CompleteIt = (function() {
         this.updateDom();
       } else {
         // The current query isn't cached. Perform a new query.
-        // TODO: pass jquery ajax options
-        
+        // Trigger the `performQuery` event to execute the new throttled query.
         this.$element.trigger('performQuery');
       }
     }
