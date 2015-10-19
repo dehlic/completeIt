@@ -1,0 +1,17 @@
+.complete-it {
+  position: relative;
+}
+
+.complete-it .list {
+  position: absolute;
+  top: 20px;
+  left: 0;
+}
+
+.complete-it .list li.current {
+  background-color: #d6d6ff;
+}
+
+.complete-it .list li span {
+  font-weight: 700;
+}
