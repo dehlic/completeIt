@@ -1,5 +1,5 @@
 /*
- * Autocompleter.js is a small library to autcomplete results in search inputs.
+ * CompleteIt.js is a small library to autcomplete results in search inputs.
  * It is designed to work with a remote endpoint that serves autocomplete results,
  * (i.e. ElasticSearch, Zend).
  *
@@ -14,11 +14,11 @@
 // var $ = require('jquery');
 // var _ = require('lodash');
 
-this.Autocompleter = (function() {
+this.CompleteIt = (function() {
   'use strict';
 
-  function Autocompleter($element, options) {
-    // `$element` is the jQuery element Autocompleter is attached to.
+  function CompleteIt($element, options) {
+    // `$element` is the jQuery element CompleteIt is attached to.
     // It is a form that contains an `input[text]`
     this.$element = $element;
     // `$input` is the jQuery `input[text]` element
@@ -81,8 +81,8 @@ this.Autocompleter = (function() {
     this.BOOSTSCORE = 1;
   }
 
-  // Function to initiliaze Autocompleter
-  Autocompleter.prototype.init = function () {
+  // Function to initiliaze CompleteIt
+  CompleteIt.prototype.init = function () {
     if (this.$input.length) {
       // Inject the $list element
       this.$element.append(this.$list);
@@ -93,7 +93,7 @@ this.Autocompleter = (function() {
 
 
   // `keydownProxy` routes to specific callback via keycode
-  Autocompleter.prototype.keydownProxy = function (e) {
+  CompleteIt.prototype.keydownProxy = function (e) {
     if ((e.which === this.UPARROWKEY) || (e.which === this.DOWNARROWKEY)) {
       this.keydownArrows(e);
     } else if (e.which === this.ENTERKEY) {
@@ -107,7 +107,7 @@ this.Autocompleter = (function() {
 
   // `keydownOther` is triggered when use types text in the input
   // Perform a new query if there isn't a cached query
-  Autocompleter.prototype.keydownOther = function () {
+  CompleteIt.prototype.keydownOther = function () {
     // Update current `input` value
     // and cache a genuine oldInput
     this.input = this.$input.val();
@@ -132,13 +132,13 @@ this.Autocompleter = (function() {
   };
 
   // `keydownEsc` restore the old input value and close the $list
-  Autocompleter.prototype.keydownEsc = function () {
+  CompleteIt.prototype.keydownEsc = function () {
     this.$input.val(this.cachedInput);
     this.$list.removeClass('open');
   };
 
   // `keydownArrows` select results with arrows
-  Autocompleter.prototype.keydownArrows = function (e) {
+  CompleteIt.prototype.keydownArrows = function (e) {
     var possibleIndex;
     var toAdd = (e.which === this.UPARROWKEY) ? -1 : 1;
     possibleIndex = this.currentIndex + toAdd;
@@ -150,7 +150,7 @@ this.Autocompleter = (function() {
   };
 
   // updateCurrentElementInDom handles the highlighting of the `currentElement` in the list
-  Autocompleter.prototype.updateCurrentElementInDOM = function () {
+  CompleteIt.prototype.updateCurrentElementInDOM = function () {
     var $toHighlight = $(this.$listElements.get(this.currentIndex));
     this.$listElements.not($toHighlight).removeClass('current');
     $toHighlight.addClass('current');
@@ -159,7 +159,7 @@ this.Autocompleter = (function() {
   //
   // `indexer` return a valid unique key for the query
   // http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
-  Autocompleter.prototype.indexer = function (query) {
+  CompleteIt.prototype.indexer = function (query) {
     var hash = 0;
     var i;
     var chr;
@@ -178,7 +178,7 @@ this.Autocompleter = (function() {
   // `ajaxCallback` is the callback of the ajax request
   // take the dirty results, boost resulats that contains anx exact match,
   // format results highlighting the common part and sort them by score.
-  Autocompleter.prototype.ajaxCallback = function (response) {
+  CompleteIt.prototype.ajaxCallback = function (response) {
     var temporaryElements = this.normalizeElements(response);
     temporaryElements = this.boostAndFormat(temporaryElements);
     temporaryElements = this.sortTemporaryElements(temporaryElements);
@@ -189,7 +189,7 @@ this.Autocompleter = (function() {
   };
   
   // UpdateDom empty the listin the DOM and fill it with the new elements
-  Autocompleter.prototype.updateDom = function () {
+  CompleteIt.prototype.updateDom = function () {
     this.currentIndex = 0;
     this.$list.empty();
     _.each(this.elements, function (el) {
@@ -202,7 +202,7 @@ this.Autocompleter = (function() {
 
 
   // `normalizeElements` select the array of results according the `options.resultKey`
-  Autocompleter.prototype.normalizeElements = function (response) {
+  CompleteIt.prototype.normalizeElements = function (response) {
     var temporaryElements;
     if (this.options.resultKey) {
       temporaryElements = response[this.options.resultKey];
@@ -215,7 +215,7 @@ this.Autocompleter = (function() {
 
   // `boostAndFormat` take a temporary elements array.
   // Boost the score of the exact matches and format content according current query
-  Autocompleter.prototype.boostAndFormat = function (temporaryElements) {
+  CompleteIt.prototype.boostAndFormat = function (temporaryElements) {
     temporaryElements = _.map(temporaryElements, function(element) {
       if (element[this.options.elementContentKey].indexOf(this.input)) {
         // The element contains the exact match of the input
@@ -231,7 +231,7 @@ this.Autocompleter = (function() {
   };
 
   // `sortTemporaryElements` sort elements by score
-  Autocompleter.prototype.sortTemporaryElements = function(temporaryElements) {
+  CompleteIt.prototype.sortTemporaryElements = function(temporaryElements) {
     return _.sortBy(temporaryElements, function (element) {
       return element[this.options.elementScoreKey];
     }, this); 
@@ -239,7 +239,7 @@ this.Autocompleter = (function() {
 
   // `updateQueries` store the current query and result in the queries array
   // TODO: Design an error strategy
-  Autocompleter.prototype.updateQueries = function () {
+  CompleteIt.prototype.updateQueries = function () {
 
     var hash = this.indexer(this.input);
     if (!this.queries[hash]) {
@@ -255,7 +255,7 @@ this.Autocompleter = (function() {
 
   // `select` executes when user select a result, clicking or using arrows
   // if `force` is true the form will be submitted (to use with click)
-  Autocompleter.prototype.select = function (force) {
+  CompleteIt.prototype.select = function (force) {
 
     var resultCurrent = this.elements[this.currentIndex];
     this.$input.val(resultCurrent[this.options.elementContentKey]);
@@ -267,7 +267,7 @@ this.Autocompleter = (function() {
   // `selectByClick` is the callback for the click on a list elements
   // It sets the `currentIndex` according the index of the element that gets clicked
   // It calls `select` forcing the form submission.
-  Autocompleter.prototype.selectByClick = function(e) {
+  CompleteIt.prototype.selectByClick = function(e) {
     var $target = $(e.target);
     var currentIndex = this.$listElements.index($target);
     this.currentIndex = currentIndex;
@@ -275,7 +275,7 @@ this.Autocompleter = (function() {
   };
 
   // `bindEvents()` is responsible to attach DOM events
-  Autocompleter.prototype.bindEvents = function () {
+  CompleteIt.prototype.bindEvents = function () {
     this.$input.on('keyup', _.bind(this.keydownProxy, this));
 
     this.$element.on('submit', function(e) { e.preventDefault(); });
@@ -284,6 +284,6 @@ this.Autocompleter = (function() {
     this.$list.on('click', 'li', _.bind(this.selectByClick, this));
   };
 
-  return Autocompleter;
+  return CompleteIt;
 })();
 
