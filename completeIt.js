@@ -148,8 +148,7 @@ this.CompleteIt = (function() {
 
   // `keydownEsc` restore the old input value and close the $list
   CompleteIt.prototype.keydownEsc = function () {
-    this.$input.val(this.cachedInput);
-    this.$list.removeClass('open');
+    this.unselect();
   };
 
   // `keydownArrows` select results with arrows
@@ -160,14 +159,21 @@ this.CompleteIt = (function() {
     if ((possibleIndex >= 0) && (possibleIndex <= (this.elements.length - 1))) {
       this.currentIndex = possibleIndex;
       this.updateCurrentElementInDOM();
+      // Update the input without submitting
+      this.select();
+    } else {
+      this.unselect();
     }
   };
 
   // updateCurrentElementInDom handles the highlighting of the `currentElement` in the list
   CompleteIt.prototype.updateCurrentElementInDOM = function () {
-    var $toHighlight = $(this.$listElements.get(this.currentIndex));
+    var $toHighlight = false;
+    if (this.currentIndex > -1) {
+      $toHighlight = $(this.$listElements.get(this.currentIndex));
+      $toHighlight.addClass('current');
+    }
     this.$listElements.not($toHighlight).removeClass('current');
-    $toHighlight.addClass('current');
   };
 
   //
@@ -204,7 +210,7 @@ this.CompleteIt = (function() {
   
   // UpdateDom empty the listin the DOM and fill it with the new elements
   CompleteIt.prototype.updateDom = function () {
-    this.currentIndex = 0;
+    this.currentIndex = -1;
     this.$list.empty();
     _.each(this.elements, function (el) {
       this.$list.append(
@@ -281,6 +287,15 @@ this.CompleteIt = (function() {
     if (force) {
       this.$element.submit();
     }
+  };
+
+  // `unselect` reset the `currentIndex` to default value and restore the
+  // input value.
+  CompleteIt.prototype.unselect = function () {
+    this.$list.removeClass('open');
+    this.currentIndex = -1;
+    this.updateCurrentElementInDOM();
+    this.$input.val(this.cachedInput);
   };
 
   // `selectByClick` is the callback for the click on a list elements
