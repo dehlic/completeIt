@@ -8,10 +8,16 @@
   left: 0;
   list-style: none;
   padding: 0;
+  display: none;
+}
+
+.complete-it .list.open {
+  display: block;
 }
 
 .complete-it .list li {
   font-weight: 700;
+  cursor: pointer;
 }
 
 .complete-it .list li.current {
@@ -20,4 +26,5 @@
 
 .complete-it .list li span {
   font-weight: 300;
+  pointer-events: none;
 }
