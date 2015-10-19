@@ -17,6 +17,7 @@ CompleteIt.js is built with [Brunch](http://brunch.io).
 
 * `actionUrl`: the url to make autocomplete queries (defaults to form action)
 * `throttleTime`: the minimum interval between remote queries (defaults to 500ms)
+* `minLength`: the autocomplete starts if the input value length is at least `minLength`
 * `resultKey`: is the key in the ajax response object that contains autocomplete results
 * `elementContentKey`: is the key in each result element that contains the autocomplete text
 * `elementScoreKey`: is the key in each result element that contains the score used to order results

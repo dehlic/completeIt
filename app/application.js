@@ -72,6 +72,7 @@ var CompleteIt = {
     // `options` object contains:
     // `actionUrl`: the url to make autocomplete queries (defaults to form action)
     // `throttleTime`: the minimum interval between remote queries (defaults to 500ms)
+    // `minLength`: the autocomplete starts if the input value length is at least `minLength`
     // `resultKey`: is the key in the ajax response object that contains autocomplete results
     // `elementContentKey`: is the key in each result element that contains the autocomplete text
     // `elementScoreKey`: is the key in each result element that contains the score used to order results
@@ -80,6 +81,7 @@ var CompleteIt = {
     var defaultOptions = {
       actionUrl: this.$element.attr('action'),
       throttleTime: 500,
+      minLength: 5,
       resultKey: 'results',
       elementContentKey: 'content',
       elementScoreKey: false,
@@ -129,7 +131,7 @@ var CompleteIt = {
     // use a lowerCase input for internal comparision but cache the original.
     this.input = input.trim().toLowerCase();
     // Process stuff just if `input` is not blank
-    if (this.input.length) {
+    if (this.input.length >= this.options.minLength) {
       this.cachedInput = input;
       // Search current query in the array of queries already performed.
       // the key is the hashed query
