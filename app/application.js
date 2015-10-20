@@ -48,6 +48,8 @@ var CompleteIt = {
   // `submitPrevented` is a flag to prevent form submission
   submitPrevented: true,
 
+  localStorageSupport: false,
+
   // Some class constant
   UPARROWKEY: 38,
   DOWNARROWKEY: 40,
@@ -55,6 +57,8 @@ var CompleteIt = {
   ESCKEY: 27,
 
   BOOSTSCORE: 1,
+
+  HASHPREFIX: 'completeit_',
 
   // Function to initiliaze CompleteIt
   init: function ($element, options) {
@@ -78,6 +82,7 @@ var CompleteIt = {
     // `elementScoreKey`: is the key in each result element that contains the score used to order results
     // `crossDomain`: expose jQuery Ajax option
     // `cookies`: expose jQuery Ajax option
+    // `localStorageExpiresIn`: (seconds) it localStorage is supported the queries will be cached for `localStorageExpiresIn`
     var defaultOptions = {
       actionUrl: this.$element.attr('action'),
       throttleTime: 500,
@@ -86,7 +91,8 @@ var CompleteIt = {
       elementContentKey: 'content',
       elementScoreKey: false,
       crossDomain: false,
-      cookies: false
+      cookies: false,
+      localStorageExpiresIn: 100000
     };
 
     options = (options) ? options : {};
@@ -100,10 +106,41 @@ var CompleteIt = {
       this.$element.append(this.$ghostInput);
       // Assign `.complete-it` class to form (to style elements)
       this.$element.addClass('complete-it');
+      // Initialize localStorage
+      this.initLocalStorage();
       // Bind events
       this.bindEvents();
 
     }
+  },
+
+  // `initLocalStorage` checks for localStorage support. If it is present
+  // it assigns `queries` to localStorage (in this way the store mechanism is pretty the same)
+  initLocalStorage: function () {
+    this.localStorageSupport = this.supportsLocalStorage();
+    if (this.localStorageSupport) {
+      this.cleanLocalStorage();
+      this.queries = localStorage;
+    }
+  },
+
+  // `cleanLocalStorage` removes all queries stored in localStorage too old
+  cleanLocalStorage: function () {
+    var toRemove = [];
+    // First get the keys to be removed
+    _.each(localStorage, function(el, i) {
+      var key = localStorage.key(i);
+      if (key.indexOf(this.HASHPREFIX) > -1) {
+        var element = JSON.parse(localStorage.getItem(key));
+        if ((Date.now() - element.createdAt) > this.options.localStorageExpiresIn) {
+          toRemove.push(key);
+        }
+      }
+    }, this);
+    // Then remove the expired keys
+    _.each(toRemove, function (el) {
+      localStorage.removeItem(el);
+    });
   },
 
 
@@ -138,7 +175,8 @@ var CompleteIt = {
       var cached = this.queries[this.indexer(this.input)];
       if (cached) {
         // The current query was already performed. Use that results as current
-        this.elements = cached.elements;
+        // Apply JSON parse if we are using localStorage
+        this.elements = (this.localStorageSupport) ? JSON.parse(cached).elements : cached.elements;
         this.updateDom();
       } else {
         // The current query isn't cached. Perform a new query.
@@ -209,7 +247,7 @@ var CompleteIt = {
       hash  = ((hash << 5) - hash) + chr;
       hash |= 0; // Convert to 32bit integer
     }
-    return hash;
+    return this.HASHPREFIX + hash;
   },
 
   // `ajaxCallback` is the callback of the ajax request
@@ -309,7 +347,14 @@ var CompleteIt = {
         query: this.input,
         elements: this.elements
       };
-      this.queries[hash] = query;
+      // When we're using localStorage it is important to store the timestamp
+      // to check the expiration of the cached query. It is also necessary to stringify the object.
+      if (this.localStorageSupport) {
+        query.createdAt = Date.now();
+        this.queries[hash] = JSON.stringify(query);
+      } else {
+        this.queries[hash] = query;
+      }
     } else {
       console.log('Error: this query is already present: ' + hash);
       // Error strategy
@@ -369,6 +414,16 @@ var CompleteIt = {
   submitHandler: function (e) {
     if (this.submitPrevented) {
       e.preventDefault();
+    }
+  },
+
+
+  // check for Localstorage support
+  supportsLocalStorage: function () {
+    try {
+      return 'localStorage' in window && window.localStorage !== null;
+    } catch (e) {
+      return false;
     }
   },
 
