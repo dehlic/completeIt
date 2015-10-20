@@ -23,4 +23,5 @@ CompleteIt.js is built with [Brunch](http://brunch.io).
 * `elementScoreKey`: is the key in each result element that contains the score used to order results
 * `crossDomain`: expose jQuery Ajax option
 * `cookies`: expose jQuery Ajax option
+* `localStorageExpiresIn`: (seconds) it localStorage is supported the queries will be cached for `localStorageExpiresIn`
 
