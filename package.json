@@ -3,7 +3,7 @@
   "description": "A simple autocomplete plugin.",
   "author": "Lucio Baglione (coire1@gmail.com)",
   "version": "0.0.1",
-  "main": "application.js",
+  "main": "app/application.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/dehlic/completeIt"
