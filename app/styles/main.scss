@@ -1,4 +1,4 @@
-$selectred-color: #d6d6ff;
+$selected-color: #d6d6ff;
 
 .complete-it {
   position: relative;
@@ -19,7 +19,7 @@ $selectred-color: #d6d6ff;
       cursor: pointer;
 
       &.current {
-        background-color: $selectred-color;
+        background-color: $selected-color;
       }
 
       span {

@@ -83,6 +83,7 @@ var CompleteIt = {
     // `crossDomain`: expose jQuery Ajax option
     // `cookies`: expose jQuery Ajax option
     // `localStorageExpiresIn`: (seconds) it localStorage is supported the queries will be cached for `localStorageExpiresIn`
+    // defaults to 1 week
     var defaultOptions = {
       actionUrl: this.$element.attr('action'),
       throttleTime: 500,
@@ -92,7 +93,7 @@ var CompleteIt = {
       elementScoreKey: false,
       crossDomain: false,
       cookies: false,
-      localStorageExpiresIn: 100000
+      localStorageExpiresIn: 604800
     };
 
     options = (options) ? options : {};
@@ -132,7 +133,7 @@ var CompleteIt = {
       var key = localStorage.key(i);
       if (key.indexOf(this.HASHPREFIX) > -1) {
         var element = JSON.parse(localStorage.getItem(key));
-        if ((Date.now() - element.createdAt) > this.options.localStorageExpiresIn) {
+        if ((Math.floor(Date.now()/1000) - element.createdAt) > this.options.localStorageExpiresIn) {
           toRemove.push(key);
         }
       }
@@ -239,9 +240,6 @@ var CompleteIt = {
     var i;
     var chr;
     var len  = query.length;
-    if (query.length === 0) {
-      return hash;
-    }
     for (i = 0, len; i < len; i++) {
       chr   = query.charCodeAt(i);
       hash  = ((hash << 5) - hash) + chr;
@@ -350,7 +348,7 @@ var CompleteIt = {
       // When we're using localStorage it is important to store the timestamp
       // to check the expiration of the cached query. It is also necessary to stringify the object.
       if (this.localStorageSupport) {
-        query.createdAt = Date.now();
+        query.createdAt = Math.floor(Date.now() / 1000);
         this.queries[hash] = JSON.stringify(query);
       } else {
         this.queries[hash] = query;
