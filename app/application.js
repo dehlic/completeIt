@@ -62,16 +62,20 @@ var CompleteIt = {
 
   // Function to initiliaze CompleteIt
   init: function ($element, options) {
-    // `$element` is the jQuery element CompleteIt is attached to.
+    // `$element` is the DOM element CompleteIt is attached to.
     // It is a form that contains an `input[text]`
     this.$element = $element;
-    // `$input` is the jQuery `input[text]` element
-    this.$input = $element.find('input[type=text]');
+    // `$input` is the DOM `input[text]` element
+    this.$input = $element.querySelector('input[type=text]');
     // `$list` is the DOM representation of `elements`
-    this.$list = $('<ul/>').addClass('list');
-    // `$ghostInput` is the jQuery element used to display the first
+    this.$list = document.createElement('ul');
+    this.$list.classList.add('list');
+    // `$ghostInput` is the DOM element used to display the first
     // exact autocompleted result.
-    this.$ghostInput = this.$input.clone().attr('disabled', true).attr('placeholder', '').addClass('ghost-input');
+    this.$ghostInput = this.$input.cloneNode(true);
+    this.$ghostInput.classList.add('ghost-input');
+    this.$ghostInput.setAttribute('disabled', true);
+    this.$ghostInput.setAttribute('placeholder', '');
 
     // `options` object contains:
     // `actionUrl`: the url to make autocomplete queries (defaults to form action)
@@ -85,7 +89,7 @@ var CompleteIt = {
     // `localStorageExpiresIn`: (seconds) it localStorage is supported the queries will be cached for `localStorageExpiresIn`
     // defaults to 1 week
     var defaultOptions = {
-      actionUrl: this.$element.attr('action'),
+      actionUrl: this.$element.getAttribute('action'),
       throttleTime: 500,
       minLength: 5,
       resultKey: 'results',
@@ -100,18 +104,15 @@ var CompleteIt = {
 
     this.options = _.defaults(options, defaultOptions);
 
-    if (this.$input.length) {
+    if (this.$input) {
       // Inject the $list element
-      this.$element.append(this.$list);
+      this.$element.appendChild(this.$list);
       // Inject the $ghostInput element
-      this.$element.append(this.$ghostInput);
+      this.$element.appendChild(this.$ghostInput);
       // Assign `.complete-it` class to form (to style elements)
-      this.$element.addClass('complete-it');
-      // Initialize localStorage
+      this.$element.classList.add('complete-it');
       this.initLocalStorage();
-      // Bind events
       this.bindEvents();
-
     }
   },
 
@@ -164,7 +165,7 @@ var CompleteIt = {
   keydownOther: function () {
     // Update current `input` value
     // and cache a genuine oldInput
-    var input = this.$input.val();
+    var input = this.$input.value;
     this.updateGhostInput(input);
     // use a lowerCase input for internal comparision but cache the original.
     this.input = input.trim().toLowerCase();
@@ -182,7 +183,8 @@ var CompleteIt = {
       } else {
         // The current query isn't cached. Perform a new query.
         // Trigger the `performQuery` event to execute the new throttled query.
-        this.$element.trigger('performQuery');
+        var performQueryEvent = new Event('performQuery');
+        this.$element.dispatchEvent(performQueryEvent);
       }
     }
 
@@ -191,6 +193,10 @@ var CompleteIt = {
 
   // `performQuery` is a reference to throttle the ajax query
   performQuery: function () {
+    // var httpRequest = new XMLHttpRequest();
+    // httpRequest.onreadystatechange = _.bind(this.ajaxCallback, this);
+    // httpRequest.open('GET', this.options.actionUrl);
+    // httpRequest.send('q=' + encodeURIComponent(this.input));
     $.ajax({
       url: this.options.actionUrl,
       success: _.bind(this.ajaxCallback, this),
@@ -226,10 +232,14 @@ var CompleteIt = {
   updateCurrentElementInDOM: function () {
     var $toHighlight = false;
     if (this.currentIndex > -1) {
-      $toHighlight = $(this.$listElements.get(this.currentIndex));
-      $toHighlight.addClass('current');
+      $toHighlight = this.$listElements[this.currentIndex];
+      $toHighlight.classList.add('current');
     }
-    this.$listElements.not($toHighlight).removeClass('current');
+    var tempElements = Array.prototype.slice.call(this.$listElements);
+    tempElements.splice(this.currentIndex, 1);
+    _.each(tempElements, function(el) {
+      el.classList.remove('current');
+    });
   },
 
   //
@@ -265,20 +275,23 @@ var CompleteIt = {
   // `UpdateDom` empty the listin the DOM and fill it with the new elements
   updateDom: function () {
     this.currentIndex = -1;
-    this.$list.removeClass('open').empty();
+    this.$list.classList.remove('open');
+    while(this.$list.firstChild) {
+      this.$list.removeChild(this.$list.firstChild);
+    }
     _.each(this.elements, function (el) {
-      this.$list.append(
-        $('<li>').html(el.formattedContent)
-      );
+      var tempEl = document.createElement('li');
+      tempEl.innerHTML = el.formattedContent;
+      this.$list.appendChild(tempEl);
     }, this); 
-    this.$list.addClass('open');
-    this.$listElements = this.$list.find('li');
+    this.$list.classList.add('open');
+    this.$listElements = this.$list.querySelectorAll('li');
     this.ghostInputApparition();
   },
 
   // `updateGhostInput` is used to synchronize input and ghost input
   updateGhostInput: function (value) {
-    this.$ghostInput.val(value);
+    this.$ghostInput.value = value;
   },
 
   // `ghostInputAppartition` shows the ghost input if the first autcompleted element
@@ -366,7 +379,7 @@ var CompleteIt = {
     // Set the input value based on `currentIndex` or don't touch it.
     if (this.currentIndex > -1) {
       var resultCurrent = this.elements[this.currentIndex];
-      this.$input.val(resultCurrent[this.options.elementContentKey]);
+      this.$input.value = resultCurrent[this.options.elementContentKey];
       this.updateGhostInput('');
     }
     if (force) {
@@ -378,18 +391,20 @@ var CompleteIt = {
   // `unselect` reset the `currentIndex` to default value and restore the
   // input value.
   unselect: function () {
-    this.$list.removeClass('open');
+    this.$list.classList.remove('open');
     this.unselectIndex();
-    this.$input.val(this.cachedInput);
+    this.$input.value = this.cachedInput;
   },
 
   // `selectByHover` is the callback for the `mouseenter` event on a list element.
   // It sets the `currentIndex` according the index of the element that gets hovered
   selectByHover: function (e) {
-    var $target = $(e.target);
-    var currentIndex = this.$listElements.index($target);
-    this.currentIndex = currentIndex;
-    this.updateCurrentElementInDOM();
+    if (e.target && e.target.nodeName === 'LI') {
+      var $target = e.target;
+      var currentIndex = this.elementIndex($target);
+      this.currentIndex = currentIndex;
+      this.updateCurrentElementInDOM();
+    }
   },
 
   // `unselectIndex` resets `currentIndex`
@@ -403,8 +418,10 @@ var CompleteIt = {
   // It sets the `currentIndex` according the index of the element that gets clicked
   // It calls `select` forcing the form submission.
   selectByClick: function (e) {
-    this.selectByHover(e);
-    this.select(true);
+    if (e.target && e.target.nodeName === 'LI') {
+      this.selectByHover(e);
+      this.select(true);
+    }
   },
 
   // `submitHandler` is the callback for the submit event on the form.
@@ -429,7 +446,7 @@ var CompleteIt = {
   bindEvents: function () {
     // Listen for `performQuery` to make ajax query
     // this event is throttled
-    this.$element.on('performQuery', _.throttle(
+    this.$element.addEventListener('performQuery', _.throttle(
       _.bind(this.performQuery, this),
       this.options.throttleTime,
       {
@@ -439,14 +456,23 @@ var CompleteIt = {
     ));
 
     // Listen for keyup events and use a proxy to handle them.
-    this.$element.on('keyup', _.bind(this.keydownProxy, this));
+    this.$element.addEventListener('keyup', _.bind(this.keydownProxy, this));
 
-    this.$element.on('submit', _.bind(this.submitHandler, this));
+    this.$element.addEventListener('submit', _.bind(this.submitHandler, this));
 
     // Use delegation to attach click, mouseenter and mouseleave events once
-    this.$list.on('click', 'li', _.bind(this.selectByClick, this));
-    this.$list.on('mouseenter', 'li', _.bind(this.selectByHover, this));
-    this.$list.on('mouseleave', 'li', _.bind(this.unselectIndex, this));
+    this.$list.addEventListener('click', _.bind(this.selectByClick, this));
+    this.$list.addEventListener('mouseover', _.bind(this.selectByHover, this));
+    this.$list.addEventListener('mouseout', _.bind(this.unselectIndex, this));
+  },
+
+  elementIndex: function(element) {
+    var index = 0;
+    while (element.previousSibling !== null) {
+      index++;
+      element = element.previousSibling;
+    }
+    return index;
   }
 };
 
