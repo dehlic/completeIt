@@ -24,7 +24,7 @@ var CompleteIt = {
   //  elements: Array of objects (same form of `elements`)
   // }
   // `queries` is an array of queries already performed, useful for cache.
-  queries: [],
+  queries: false,
 
   // `elements`: array of objects
   // Single element:
@@ -81,28 +81,32 @@ var CompleteIt = {
     // `actionUrl`: the url to make autocomplete queries (defaults to form action)
     // `throttleTime`: the minimum interval between remote queries (defaults to 500ms)
     // `minLength`: the autocomplete starts if the input value length is at least `minLength`
-    // `resultKey`: is the key in the ajax response object that contains autocomplete results
-    // `elementContentKey`: is the key in each result element that contains the autocomplete text
-    // `elementScoreKey`: is the key in each result element that contains the score used to order results
+    // `mapAndFilter`: is the function applied to ajax callback.
+    // It must produce an array of objects, each object with a `content` key with the content of the
+    // autocomplete
     // `crossDomain`: expose jQuery Ajax option
     // `cookies`: expose jQuery Ajax option
-    // `localStorageExpiresIn`: (seconds) it localStorage is supported the queries will be cached for `localStorageExpiresIn`
+    // `cache`: describes the cache startegy. It can be `false`, `memory`, `sessionStorage`, `localStorage`
+    // `cacheExpires`: (seconds) if `localStorage` or `sessionStorage` are chosen as cache strategy, the
+    // cache will expires in `cacheExpires`
     // defaults to 1 week
     var defaultOptions = {
       actionUrl: this.$element.getAttribute('action'),
       throttleTime: 500,
       minLength: 5,
-      resultKey: 'results',
-      elementContentKey: 'content',
-      elementScoreKey: false,
+      mapAndFilter: function (results, input) {
+        console.log(input);
+        return JSON.parse(results);
+      },
       crossDomain: false,
       cookies: false,
-      localStorageExpiresIn: 604800
+      cache: 'localStorage',
+      cacheExpires: 604800
     };
 
     options = (options) ? options : {};
 
-    this.options = _.defaults(options, defaultOptions);
+    this.options = this.utils.extend(defaultOptions, options);
 
     if (this.$input) {
       // Inject the $list element
@@ -111,38 +115,50 @@ var CompleteIt = {
       this.$element.appendChild(this.$ghostInput);
       // Assign `.complete-it` class to form (to style elements)
       this.$element.classList.add('complete-it');
-      this.initLocalStorage();
+      this.initCache();
       this.bindEvents();
+    }
+  },
+
+  // initialize the cache, according the chosen strategy.
+  initCache: function () {
+    if (this.options.cache === 'localStorage') {
+      this.storageSupport = this.supportsStorage('localStorage');
+      this.initStorage(localStorage);
+    } else if (this.options.cache === 'sessionStorage') {
+      this.storageSupport = this.supportsStorage('sessionStorage');
+      this.initStorage(sessionStorage);
+    } else if (this.options.cache === 'memory') {
+      this.queries = [];
     }
   },
 
   // `initLocalStorage` checks for localStorage support. If it is present
   // it assigns `queries` to localStorage (in this way the store mechanism is pretty the same)
-  initLocalStorage: function () {
-    this.localStorageSupport = this.supportsLocalStorage();
-    if (this.localStorageSupport) {
-      this.cleanLocalStorage();
-      this.queries = localStorage;
+  initStorage: function (storageType) {
+    if (this.storageSupport) {
+      this.cleanStorage(storageType);
+      this.queries = storageType;
     }
   },
 
-  // `cleanLocalStorage` removes all queries stored in localStorage too old
-  cleanLocalStorage: function () {
+  // `cleanStorage` removes all queries stored in storage that are too old
+  cleanStorage: function (storageType) {
     var toRemove = [];
     // First get the keys to be removed
-    _.each(localStorage, function(el, i) {
-      var key = localStorage.key(i);
+    for (var i = 0; i < storageType.length; i++) {
+      var key = storageType.key(i);
       if (key.indexOf(this.HASHPREFIX) > -1) {
-        var element = JSON.parse(localStorage.getItem(key));
-        if ((Math.floor(Date.now()/1000) - element.createdAt) > this.options.localStorageExpiresIn) {
+        var element = JSON.parse(storageType.getItem(key));
+        if ((Math.floor(Date.now()/1000) - element.createdAt) > this.options.cacheExpires) {
           toRemove.push(key);
         }
       }
-    }, this);
+    }
     // Then remove the expired keys
-    _.each(toRemove, function (el) {
-      localStorage.removeItem(el);
-    });
+    for (var j = 0; j < toRemove.length; j++) {
+      storageType.removeItem(toRemove[j]);
+    }
   },
 
 
@@ -174,11 +190,11 @@ var CompleteIt = {
       this.cachedInput = input;
       // Search current query in the array of queries already performed.
       // the key is the hashed query
-      var cached = this.queries[this.indexer(this.input)];
+      var cached = (this.queries) ? this.queries[this.indexer(this.input)] : false;
       if (cached) {
         // The current query was already performed. Use that results as current
         // Apply JSON parse if we are using localStorage
-        this.elements = (this.localStorageSupport) ? JSON.parse(cached).elements : cached.elements;
+        this.elements = this.parseElements(cached);
         this.updateDom();
       } else {
         // The current query isn't cached. Perform a new query.
@@ -190,6 +206,10 @@ var CompleteIt = {
 
   },
 
+  parseElements: function (cached) {
+    return (this.storageSupport) ? JSON.parse(cached).elements : cached.elements;
+  },
+
 
   // `performQuery` is a reference to throttle the ajax query
   performQuery: function () {
@@ -199,7 +219,7 @@ var CompleteIt = {
     // httpRequest.send('q=' + encodeURIComponent(this.input));
     $.ajax({
       url: this.options.actionUrl,
-      success: _.bind(this.ajaxCallback, this),
+      success: this.utils.bind(this.ajaxCallback, this),
       crossDomain: this.options.crossDomain,
       cookies: this.options.cookies,
       data: {
@@ -230,16 +250,13 @@ var CompleteIt = {
 
   // updateCurrentElementInDom handles the highlighting of the `currentElement` in the list
   updateCurrentElementInDOM: function () {
-    var $toHighlight = false;
-    if (this.currentIndex > -1) {
-      $toHighlight = this.$listElements[this.currentIndex];
-      $toHighlight.classList.add('current');
+    for (var i = 0; i < this.$listElements.length; i++) {
+      if (i === this.currentIndex) {
+        this.$listElements[i].classList.add('current');
+      } else {
+        this.$listElements[i].classList.remove('current');
+      }
     }
-    var tempElements = Array.prototype.slice.call(this.$listElements);
-    tempElements.splice(this.currentIndex, 1);
-    _.each(tempElements, function(el) {
-      el.classList.remove('current');
-    });
   },
 
   //
@@ -262,28 +279,25 @@ var CompleteIt = {
   // take the dirty results, boost resulats that contains anx exact match,
   // format results highlighting the common part and sort them by score.
   ajaxCallback: function (response) {
-    var temporaryElements = this.normalizeElements(response);
-    temporaryElements = this.boostAndFormat(temporaryElements);
-    if (this.options.elementScoreKey) {
-      temporaryElements = this.sortTemporaryElements(temporaryElements);
-    }
+    var temporaryElements = this.options.mapAndFilter(response, this.input);
+    temporaryElements = this.formatElements(temporaryElements);
     this.elements = temporaryElements;
     this.updateQueries();
     this.updateDom();
   },
   
-  // `UpdateDom` empty the listin the DOM and fill it with the new elements
+  // `UpdateDom` empty the list in the DOM and fill it with the new elements
   updateDom: function () {
     this.currentIndex = -1;
     this.$list.classList.remove('open');
     while(this.$list.firstChild) {
       this.$list.removeChild(this.$list.firstChild);
     }
-    _.each(this.elements, function (el) {
+    for (var i = 0; i < this.elements.length; i++) {
       var tempEl = document.createElement('li');
-      tempEl.innerHTML = el.formattedContent;
+      tempEl.innerHTML = this.elements[i].formattedContent;
       this.$list.appendChild(tempEl);
-    }, this); 
+    }
     this.$list.classList.add('open');
     this.$listElements = this.$list.querySelectorAll('li');
     this.ghostInputApparition();
@@ -298,78 +312,66 @@ var CompleteIt = {
   // starts as `input`.
   ghostInputApparition: function () {
     if (this.elements.length) {
-      var firstElementValue = this.elements[0][this.options.elementContentKey].toLowerCase().replace(/[^a-zA-Z ]/g, '');
-      if (firstElementValue.indexOf(this.input) === 0) {
+      var firstElementValue = this.elements[0].content;
+      if (firstElementValue && firstElementValue.indexOf(this.cachedInput) === 0) {
         this.updateGhostInput(firstElementValue);
       }
     }
   },
 
 
-  // `normalizeElements` select the array of results according the `options.resultKey`
-  normalizeElements: function (response) {
-    var temporaryElements;
-    if (this.options.resultKey) {
-      temporaryElements = response[this.options.resultKey];
-    } else {
-      temporaryElements = response;
+  // `formatElements` takes an array of results, each one with a `content` key.
+  // It formats the content, highlighting the exact match with input, and it cleans
+  // the unuseful properties.
+  formatElements: function (temporaryElements) {
+    for (var i = 0; i < temporaryElements.length; i++) {
+      var element = temporaryElements[i];
+      if (element.content) {
+        // Lowercase string and remove non-character to perform an exact match
+        element.formattedContent = element.content.toLowerCase().replace(/[^a-zA-Z ]/g, '');
+        if (element.formattedContent.indexOf(this.input) > -1) {
+          // The element contains the exact match of the input
+          // Its match will be highlighted
+          element.formattedContent = element.formattedContent.replace(this.input, '<span>' + this.input + '</span>');
+        }
+      }
+      // Remove every key that is not `content` or `formattedContent`
+      for (var key in element) {
+        if ((key !== 'content') && (key !== 'formattedContent')) {
+          delete element[key];
+        }
+      }
     }
     return temporaryElements;
-
   },
 
-  // `boostAndFormat` take a temporary elements array.
-  // Boost the score of the exact matches and format content according current query
-  boostAndFormat: function (temporaryElements) {
-    temporaryElements = _.map(temporaryElements, function(element) {
-      // Lowercase string and remove non-character to perform an exact match
-      element.formattedContent = element[this.options.elementContentKey].toLowerCase().replace(/[^a-zA-Z ]/g, '');
-      if (element.formattedContent.indexOf(this.input) > -1) {
-        // The element contains the exact match of the input
-        // Its score will be boosted and match highlighted
-        if (this.options.elementScoreKey) {
-          element[this.options.elementScoreKey] = element[this.options.elementScoreKey] + this.BOOSTSCORE;
-        }
-        element.formattedContent = element.formattedContent.replace(this.input, '<span>' + this.input + '</span>');
-      }
-      // delete `id` from objects (it is not used). In this way we can store a lighter
-      // object.
-      delete element.id;
-      return element;
-    }, this);
-    return temporaryElements;
-  },
-
-  // `sortTemporaryElements` sort elements by score
-  sortTemporaryElements: function(temporaryElements) {
-    return _.sortBy(temporaryElements, function (element) {
-      // Use `-` to reverse order (from ASC to DESC)
-      // We want first the result with higher score
-      return  - element[this.options.elementScoreKey];
-    }, this); 
-  },
 
   // `updateQueries` store the current query and result in the queries array
   // TODO: Design an error strategy
   updateQueries: function () {
-    var hash = this.indexer(this.input);
-    if (!this.queries[hash]) {
-      var query = {
-        query: this.input,
-        elements: this.elements
-      };
-      // When we're using localStorage it is important to store the timestamp
-      // to check the expiration of the cached query. It is also necessary to stringify the object.
-      if (this.localStorageSupport) {
-        query.createdAt = Math.floor(Date.now() / 1000);
-        this.queries[hash] = JSON.stringify(query);
+    if (this.queries) {
+      var hash = this.indexer(this.input);
+      if (!this.queries[hash]) {
+        var query = {
+          query: this.input,
+          elements: this.elements
+        };
+        this.queries[hash] = this.storeQuery(query);
       } else {
-        this.queries[hash] = query;
+        console.log('Error: this query is already present: ' + hash);
+        // Error strategy
       }
-    } else {
-      console.log('Error: this query is already present: ' + hash);
-      // Error strategy
     }
+  },
+
+  // When we're using a storage strategy for the cache it is important to store the timestamp
+  // to check the expiration of the cached query. It is also necessary to stringify the object.
+  storeQuery: function (query) {
+    if (this.storageSupport) {
+      query.createdAt = Math.floor(Date.now() / 1000);
+      query = JSON.stringify(query);
+    }
+    return query;
   },
 
   // `select` executes when user select a result, clicking or using arrows
@@ -379,7 +381,7 @@ var CompleteIt = {
     // Set the input value based on `currentIndex` or don't touch it.
     if (this.currentIndex > -1) {
       var resultCurrent = this.elements[this.currentIndex];
-      this.$input.value = resultCurrent[this.options.elementContentKey];
+      this.$input.value = resultCurrent.content;
       this.updateGhostInput('');
     }
     if (force) {
@@ -434,9 +436,9 @@ var CompleteIt = {
 
 
   // check for Localstorage support
-  supportsLocalStorage: function () {
+  supportsStorage: function (storageType) {
     try {
-      return 'localStorage' in window && window.localStorage !== null;
+      return storageType in window && window[localStorage] !== null;
     } catch (e) {
       return false;
     }
@@ -447,7 +449,7 @@ var CompleteIt = {
     // Listen for `performQuery` to make ajax query
     // this event is throttled
     this.$element.addEventListener('performQuery', _.throttle(
-      _.bind(this.performQuery, this),
+      this.utils.bind(this.performQuery, this),
       this.options.throttleTime,
       {
         leading: true,
@@ -456,14 +458,14 @@ var CompleteIt = {
     ));
 
     // Listen for keyup events and use a proxy to handle them.
-    this.$element.addEventListener('keyup', _.bind(this.keydownProxy, this));
+    this.$element.addEventListener('keyup', this.utils.bind(this.keydownProxy, this));
 
-    this.$element.addEventListener('submit', _.bind(this.submitHandler, this));
+    this.$element.addEventListener('submit', this.utils.bind(this.submitHandler, this));
 
     // Use delegation to attach click, mouseenter and mouseleave events once
-    this.$list.addEventListener('click', _.bind(this.selectByClick, this));
-    this.$list.addEventListener('mouseover', _.bind(this.selectByHover, this));
-    this.$list.addEventListener('mouseout', _.bind(this.unselectIndex, this));
+    this.$list.addEventListener('click', this.utils.bind(this.selectByClick, this));
+    this.$list.addEventListener('mouseover', this.utils.bind(this.selectByHover, this));
+    this.$list.addEventListener('mouseout', this.utils.bind(this.unselectIndex, this));
   },
 
   elementIndex: function(element) {
@@ -473,6 +475,26 @@ var CompleteIt = {
       element = element.previousSibling;
     }
     return index;
+  },
+
+  utils: {
+    bind: function(f, scope) {
+      return function () {
+        f.apply(scope, arguments);
+      };
+    },
+    extend: function () {
+      var extended = {};
+      for (var key in arguments) {
+        var argument = arguments[key];
+        for (var prop in argument) {
+          if (Object.prototype.hasOwnProperty.call(argument, prop)) {
+            extended[prop] = argument[prop];
+          }
+        }
+      }
+      return extended;
+    }
   }
 };
 
