@@ -6,8 +6,8 @@
  * Autocomplete results will be ordered by score field, and each result will be
  * cached with localStorage (if supported) or in memory.
  *
- * Dependencies are jQuery and lodash (underscore).
- * jQuery will be probably dropped.
+ * Dependencies is lodash.throttle.
+ *
 */
 
 'use strict';
@@ -78,28 +78,26 @@ var CompleteIt = {
     this.$ghostInput.setAttribute('placeholder', '');
 
     // `options` object contains:
-    // `actionUrl`: the url to make autocomplete queries (defaults to form action)
     // `throttleTime`: the minimum interval between remote queries (defaults to 500ms)
     // `minLength`: the autocomplete starts if the input value length is at least `minLength`
     // `mapAndFilter`: is the function applied to ajax callback.
     // It must produce an array of objects, each object with a `content` key with the content of the
     // autocomplete
-    // `crossDomain`: expose jQuery Ajax option
-    // `cookies`: expose jQuery Ajax option
     // `cache`: describes the cache startegy. It can be `false`, `memory`, `sessionStorage`, `localStorage`
     // `cacheExpires`: (seconds) if `localStorage` or `sessionStorage` are chosen as cache strategy, the
     // cache will expires in `cacheExpires`
     // defaults to 1 week
     var defaultOptions = {
-      actionUrl: this.$element.getAttribute('action'),
       throttleTime: 500,
       minLength: 5,
       mapAndFilter: function (results, input) {
         console.log(input);
         return JSON.parse(results);
       },
-      crossDomain: false,
-      cookies: false,
+      ajax: function (input) {
+        //return ajax Promise;
+        return input;
+      },
       cache: 'localStorage',
       cacheExpires: 604800
     };
@@ -213,19 +211,8 @@ var CompleteIt = {
 
   // `performQuery` is a reference to throttle the ajax query
   performQuery: function () {
-    // var httpRequest = new XMLHttpRequest();
-    // httpRequest.onreadystatechange = _.bind(this.ajaxCallback, this);
-    // httpRequest.open('GET', this.options.actionUrl);
-    // httpRequest.send('q=' + encodeURIComponent(this.input));
-    $.ajax({
-      url: this.options.actionUrl,
-      success: this.utils.bind(this.ajaxCallback, this),
-      crossDomain: this.options.crossDomain,
-      cookies: this.options.cookies,
-      data: {
-        q: this.input
-      }
-    });
+    var promise = this.options.ajax(this.input);
+    promise.then(this.utils.bind(this.ajaxCallback, this));
   },
 
   // `keydownEsc` restore the old input value and close the $list

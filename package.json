@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "jquery": "",
-    "lodash": ""
+    "lodash": "",
+    "lodash.throttle": ""
   },
   "devDependencies": {
     "brunch": "^1.8.5",

@@ -51,7 +51,17 @@
         crossDomain: true,
         cookies: true,
         cache: 'localStorage',
-        mapAndFilter: myMapAndFilter
+        mapAndFilter: myMapAndFilter,
+        ajax: function (input) {
+          return $.ajax({
+            url: 'http://latin-lovers-php/api/autocomplete',
+            crossDomain: true,
+            cookies: true,
+            data: {
+              q: input
+            }
+          });
+        }
       });
     </script>
   </body>
