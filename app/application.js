@@ -227,6 +227,118 @@ var CompleteIt = {
     }
   },
 
+  /*
+   *  `updateQueries` store the current query and result in the queries array, whatever
+   *  the cache strategy is selected.
+   *  TODO: Design an error strategy
+   */
+
+  updateQueries: function () {
+    if (this.queries) {
+      var hash = this.utils.indexer(this.input);
+      if (!this.queries[hash]) {
+        var query = {
+          query: this.input,
+          elements: this.elements
+        };
+        this.queries[hash] = this.storeQuery(query);
+      } else {
+        /*  Error strategy */
+        console.warn('Error: this query is already present: ' + hash);
+      }
+    }
+  },
+
+  /*
+   * `storeQuery` save the query in the cache. 
+   * When we're using a storage strategy for the cache it is important to store the timestamp
+   * to check the expiration of the cached query. It is also necessary to stringify the object.
+   */
+
+  storeQuery: function (query) {
+    if (this.storageSupport) {
+      query.createdAt = Math.floor(Date.now() / 1000);
+      query = JSON.stringify(query);
+    }
+    return query;
+  },
+
+  /* 
+   *  `parseElements` is used to uniform code in the assigning of query results
+   *  to `elements`. If the results come from localStorage or sessionStorage, the array
+   *  has to be converted from string to JSON.
+   */
+
+  parseElements: function (cached) {
+    return (this.storageSupport) ? JSON.parse(cached).elements : cached.elements;
+  },
+
+  /*
+   *  Checks for localStorage or sessionStorage support.
+   */
+
+  supportsStorage: function (storageType) {
+    try {
+      return storageType in window && window[storageType] !== null;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  /*  
+   *  `ajaxCallback` is the callback of the ajax request.
+   *  It takes a list of results, applies the `mapAndFilter` function (taken from options),
+   *  formats results according standard and cleaning unuseful keys.
+   *  It also update the current `elements` object, cache the query and update DOM.
+   */
+
+  ajaxCallback: function (response) {
+    var temporaryElements = this.options.mapAndFilter(response, this.input);
+    temporaryElements = this.formatElements(temporaryElements);
+    this.elements = temporaryElements;
+    this.updateQueries();
+    this.updateDom();
+  },
+
+  /*
+   *  `performQuery` gets executed when `performQuery` events is triggered.
+   *  It calls the ajax function passed to options, expects a Promise and
+   *  the execute the callback.
+   */
+
+  performQuery: function () {
+    var promise = this.options.ajax(this.input);
+    promise.then(this.utils.bind(this.ajaxCallback, this));
+  },
+  
+  /*  `formatElements` takes an array of results, each one with a `content` key.
+   *  It formats the content, highlights the exact match with input, and it cleans
+   *  the unuseful properties.
+   */
+
+  formatElements: function (temporaryElements) {
+    for (var i = 0; i < temporaryElements.length; i++) {
+      var element = temporaryElements[i];
+      if (element.content) {
+        /* Lowercase string and remove non-character to perform an exact match. */
+        element.formattedContent = element.content.toLowerCase().replace(/[^a-zA-Z ]/g, '');
+        if (element.formattedContent.indexOf(this.input) > -1) {
+          /* 
+           *  The element contains the exact match of the input.
+           *  Its match will be highlighted.
+           */
+          element.formattedContent = element.formattedContent.replace(this.input, '<span>' + this.input + '</span>');
+        }
+      }
+      /*  Remove every key that is not `content` or `formattedContent`. */
+      for (var key in element) {
+        if ((key !== 'content') && (key !== 'formattedContent')) {
+          delete element[key];
+        }
+      }
+    }
+    return temporaryElements;
+  },
 
   /*
    *  `keydownProxy` routes to specific callback according to keycode.
@@ -271,7 +383,7 @@ var CompleteIt = {
        *  The key is the hashed query.
        */
 
-      var cached = (this.queries) ? this.queries[this.indexer(this.input)] : false;
+      var cached = (this.queries) ? this.queries[this.utils.indexer(this.input)] : false;
       if (cached) {
         /*
          *  The current query was already performed. Use that results as current query.
@@ -289,28 +401,6 @@ var CompleteIt = {
         this.$element.dispatchEvent(performQueryEvent);
       }
     }
-  },
-
-  /* 
-   *  `parseElements` is used to uniform code in the assigning of query results
-   *  to `elements`. If the results come from localStorage or sessionStorage, the array
-   *  has to be converted from string to JSON.
-   */
-
-  parseElements: function (cached) {
-    return (this.storageSupport) ? JSON.parse(cached).elements : cached.elements;
-  },
-
-
-  /*
-   *  `performQuery` gets executed when `performQuery` events is triggered.
-   *  It calls the ajax function passed to options, expects a Promise and
-   *  the execute the callback.
-   */
-
-  performQuery: function () {
-    var promise = this.options.ajax(this.input);
-    promise.then(this.utils.bind(this.ajaxCallback, this));
   },
 
   /* `keydownEsc` restore the old input value and close the $list. */
@@ -335,6 +425,33 @@ var CompleteIt = {
   },
 
   /*
+   *  `selectByHover` is the callback for the `mouseover` event on a list element.
+   *  It sets the `currentIndex` according the index of the element that gets hovered.
+   */
+
+  selectByHover: function (e) {
+    if (e.target && e.target.nodeName === 'LI') {
+      var $target = e.target;
+      var currentIndex = this.utils.elementIndex($target);
+      this.currentIndex = currentIndex;
+      this.updateCurrentElementInDOM();
+    }
+  },
+
+  /*  
+   *  `selectByClick` is the callback for the click on a list elements.
+   *  It sets the `currentIndex` according the index of the element that gets clicked.
+   *  It calls `select` forcing the form submission.
+   */
+
+  selectByClick: function (e) {
+    if (e.target && e.target.nodeName === 'LI') {
+      this.selectByHover(e);
+      this.select(true);
+    }
+  },
+
+  /*
    *  `updateCurrentElementInDom` handles the highlighting of the `currentElement` in the list,
    *  attaching the `current` class.
    */
@@ -349,40 +466,6 @@ var CompleteIt = {
     }
   },
 
-  /*
-   *  `indexer` return a valid unique key from a string.
-   *  The result is used as a `key` for the query in the cache object.
-   *  http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
-   */
-
-  indexer: function (query) {
-    var hash = 0;
-    var i;
-    var chr;
-    var len  = query.length;
-    for (i = 0, len; i < len; i++) {
-      chr   = query.charCodeAt(i);
-      hash  = ((hash << 5) - hash) + chr;
-      hash |= 0; // Convert to 32bit integer
-    }
-    return this.HASHPREFIX + hash;
-  },
-
-  /*  
-   *  `ajaxCallback` is the callback of the ajax request.
-   *  It takes a list of results, applies the `mapAndFilter` function (taken from options),
-   *  formats results according standard and cleaning unuseful keys.
-   *  It also update the current `elements` object, cache the query and update DOM.
-   */
-
-  ajaxCallback: function (response) {
-    var temporaryElements = this.options.mapAndFilter(response, this.input);
-    temporaryElements = this.formatElements(temporaryElements);
-    this.elements = temporaryElements;
-    this.updateQueries();
-    this.updateDom();
-  },
-  
   /*
    *  `UpdateDom` empty the list in the DOM and fill it with the new elements.
    *  It also open the list in the DOM applying the `open` class.
@@ -426,73 +509,6 @@ var CompleteIt = {
     }
   },
 
-
-  /*  `formatElements` takes an array of results, each one with a `content` key.
-   *  It formats the content, highlights the exact match with input, and it cleans
-   *  the unuseful properties.
-   */
-
-  formatElements: function (temporaryElements) {
-    for (var i = 0; i < temporaryElements.length; i++) {
-      var element = temporaryElements[i];
-      if (element.content) {
-        /* Lowercase string and remove non-character to perform an exact match. */
-        element.formattedContent = element.content.toLowerCase().replace(/[^a-zA-Z ]/g, '');
-        if (element.formattedContent.indexOf(this.input) > -1) {
-          /* 
-           *  The element contains the exact match of the input.
-           *  Its match will be highlighted.
-           */
-          element.formattedContent = element.formattedContent.replace(this.input, '<span>' + this.input + '</span>');
-        }
-      }
-      /*  Remove every key that is not `content` or `formattedContent`. */
-      for (var key in element) {
-        if ((key !== 'content') && (key !== 'formattedContent')) {
-          delete element[key];
-        }
-      }
-    }
-    return temporaryElements;
-  },
-
-
-  /*
-   *  `updateQueries` store the current query and result in the queries array, whatever
-   *  the cache strategy is selected.
-   *  TODO: Design an error strategy
-   */
-
-  updateQueries: function () {
-    if (this.queries) {
-      var hash = this.indexer(this.input);
-      if (!this.queries[hash]) {
-        var query = {
-          query: this.input,
-          elements: this.elements
-        };
-        this.queries[hash] = this.storeQuery(query);
-      } else {
-        /*  Error strategy */
-        console.warn('Error: this query is already present: ' + hash);
-      }
-    }
-  },
-
-  /*
-   * `storeQuery` save the query in the cache. 
-   * When we're using a storage strategy for the cache it is important to store the timestamp
-   * to check the expiration of the cached query. It is also necessary to stringify the object.
-   */
-
-  storeQuery: function (query) {
-    if (this.storageSupport) {
-      query.createdAt = Math.floor(Date.now() / 1000);
-      query = JSON.stringify(query);
-    }
-    return query;
-  },
-
   /*  
    *  `select` executes when user select a result, clicking or using arrows
    *  if `force` is true the form will be submitted (to use with click).
@@ -522,19 +538,6 @@ var CompleteIt = {
     this.$input.value = this.cachedInput;
   },
 
-  /*
-   *  `selectByHover` is the callback for the `mouseover` event on a list element.
-   *  It sets the `currentIndex` according the index of the element that gets hovered.
-   */
-
-  selectByHover: function (e) {
-    if (e.target && e.target.nodeName === 'LI') {
-      var $target = e.target;
-      var currentIndex = this.utils.elementIndex($target);
-      this.currentIndex = currentIndex;
-      this.updateCurrentElementInDOM();
-    }
-  },
 
   /*  
    *  `unselectIndex` resets `currentIndex`.
@@ -546,18 +549,6 @@ var CompleteIt = {
     this.updateCurrentElementInDOM();
   },
 
-  /*  
-   *  `selectByClick` is the callback for the click on a list elements.
-   *  It sets the `currentIndex` according the index of the element that gets clicked.
-   *  It calls `select` forcing the form submission.
-   */
-
-  selectByClick: function (e) {
-    if (e.target && e.target.nodeName === 'LI') {
-      this.selectByHover(e);
-      this.select(true);
-    }
-  },
 
   /* 
    *  `submitHandler` is the callback for the submit event on the form.
@@ -571,17 +562,6 @@ var CompleteIt = {
   },
 
 
-  /*
-   *  Checks for localStorage or sessionStorage support.
-   */
-
-  supportsStorage: function (storageType) {
-    try {
-      return storageType in window && window[storageType] !== null;
-    } catch (e) {
-      return false;
-    }
-  },
 
   /*
    *  `bindEvents()` is responsible to attach DOM events.
@@ -659,6 +639,25 @@ var CompleteIt = {
         element = element.previousSibling;
       }
       return index;
+    },
+
+    /*
+     *  `indexer` return a valid unique key from a string.
+     *  The result is used as a `key` for the query in the cache object.
+     *  http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
+     */
+
+    indexer: function (query) {
+      var hash = 0;
+      var i;
+      var chr;
+      var len  = query.length;
+      for (i = 0, len; i < len; i++) {
+        chr   = query.charCodeAt(i);
+        hash  = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+      }
+      return this.HASHPREFIX + hash;
     }
   }
 };
