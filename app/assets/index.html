@@ -48,8 +48,6 @@
 
       var $form = document.body.querySelector('#autocomplete');
       require('application').init($form, {
-        crossDomain: true,
-        cookies: true,
         cache: 'localStorage',
         mapAndFilter: myMapAndFilter,
         ajax: function (input) {
