@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>CompleteIt.js example</title>
+    <link href="app.css" rel="stylesheet">
+  </head>
+  <body>
+    <form id="autocomplete" action="http://latin-lovers-php/api/autocomplete">
+      <input type="text"
+        name="q"
+        placeholder="search"
+        autocomplete="off"
+        autocapitalize="off">
+    </form>
+    <script src="javascripts/vendor.js"></script>
+    <script src="javascripts/app.js"></script>
+    <script>
+
+      // `boostAndFormat` take a temporary elements array.
+      // Boost the score of the exact matches and format content according current query
+      var boostAndFormat = function (elements, input) {
+        var temporaryElements = _.map(elements, function(element) {
+          element.content = element.latin;
+          if (element.content.toLowerCase().replace(/[^a-zA-Z ]/g, '').indexOf(input) > -1) {
+            element._score = element._score + 1;
+          }
+          return element;
+        });
+        return temporaryElements;
+      };
+
+
+      // `sortTemporaryElements` sort elements by score
+      var sortTemporaryElements = function(temporaryElements) {
+        return _.sortBy(temporaryElements, function (element) {
+          // Use `-` to reverse order (from ASC to DESC)
+          // We want first the result with higher score
+          return  - element._score;
+        }); 
+      };
+
+      var myMapAndFilter = function(response, input) {
+        var temporaryItems = boostAndFormat(response, input);
+        temporaryItems = sortTemporaryElements(temporaryItems);
+        return temporaryItems;
+      };
+
+      var $form = document.body.querySelector('#autocomplete');
+      require('application').init($form, {
+        cache: 'localStorage',
+        mapAndFilter: myMapAndFilter,
+        ajax: function (input) {
+          return $.ajax({
+            url: 'http://latin-lovers-php/api/autocomplete',
+            crossDomain: true,
+            cookies: true,
+            data: {
+              q: input
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

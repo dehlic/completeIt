@@ -1,0 +1,43 @@
+$selected-color: #d6d6ff;
+
+.complete-it {
+  position: relative;
+  .list {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    list-style: none;
+    padding: 0;
+    display: none;
+    
+    &.open {
+      display: block;
+    }
+
+    li {
+      font-weight: 700;
+      cursor: pointer;
+
+      &.current {
+        background-color: $selected-color;
+      }
+
+      span {
+        font-weight: 300;
+        pointer-events: none;
+      }
+    }
+  }
+
+  input[type="text"] {
+    background-color: transparent;
+  }
+
+  .ghost-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    opacity: 0.8;
+  }
+}

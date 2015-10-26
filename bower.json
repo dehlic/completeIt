@@ -1,0 +1,12 @@
+{
+  "name": "CompleteIt.js",
+  "version": "0.0.1",
+  "main": "public/app.js",
+  "dependencies": {
+    "lodash": "^3.10.1",
+    "jquery": "^2.1.4",
+    "chai": "~3.4.0",
+    "chai-dom": "~1.2.0"
+  },
+  "overrides": {}
+}
