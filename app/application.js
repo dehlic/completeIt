@@ -235,7 +235,7 @@ var CompleteIt = {
 
   updateQueries: function () {
     if (this.queries) {
-      var hash = this.utils.indexer(this.input);
+      var hash = this.utils.indexer(this.input, this);
       if (!this.queries[hash]) {
         var query = {
           query: this.input,
@@ -383,7 +383,7 @@ var CompleteIt = {
        *  The key is the hashed query.
        */
 
-      var cached = (this.queries) ? this.queries[this.utils.indexer(this.input)] : false;
+      var cached = (this.queries) ? this.queries[this.utils.indexer(this.input, this)] : false;
       if (cached) {
         /*
          *  The current query was already performed. Use that results as current query.
@@ -518,6 +518,9 @@ var CompleteIt = {
 
     /*  Set the input value based on `currentIndex`. */
     if (this.currentIndex > -1) {
+      if (this.$list.className.indexOf('open') === -1) {
+        this.$list.classList.add('open');
+      }
       var resultCurrent = this.elements[this.currentIndex];
       this.$input.value = resultCurrent.content;
       this.updateGhostInput('');
@@ -647,7 +650,7 @@ var CompleteIt = {
      *  http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
      */
 
-    indexer: function (query) {
+    indexer: function (query, context) {
       var hash = 0;
       var i;
       var chr;
@@ -657,7 +660,7 @@ var CompleteIt = {
         hash  = ((hash << 5) - hash) + chr;
         hash |= 0; // Convert to 32bit integer
       }
-      return this.HASHPREFIX + hash;
+      return context.HASHPREFIX + hash;
     }
   }
 };
