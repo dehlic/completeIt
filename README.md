@@ -118,7 +118,7 @@ client side.
 
 This is the array of object that ***MUST*** return from `mapAndFilter`.
 
-```json
+```
 [
   {
     'content': 'An autocompleted result'
