@@ -90,6 +90,7 @@ var CompleteIt = {
   DOWNARROWKEY: 40,
   ENTERKEY: 13,
   ESCKEY: 27,
+  RIGHTARROWKEY: 39,
 
   HASHPREFIX: 'completeit_',
 
@@ -352,6 +353,8 @@ var CompleteIt = {
       this.select(true);
     } else if (e.which === this.ESCKEY) {
       this.keydownEsc(e);
+    } else if (e.which === this.RIGHTARROWKEY) {
+      this.keydownRightArrow(e);
     } else {
       this.keydownOther(e);
     }
@@ -407,6 +410,20 @@ var CompleteIt = {
 
   keydownEsc: function () {
     this.unselect();
+  },
+
+  /* `keydownRightArrow` completes the input with `$ghostInput` value if it isn't null */
+
+  keydownRightArrow: function (e) {
+    if((this.$ghostInput.value.length > 0) && (this.elements.length)) {
+      if (this.$ghostInput.value === this.elements[0].content) {
+        e.preventDefault();
+        /* Set the current element as the first of the list (the same in $ghostInput). */
+        this.currentIndex = 0;
+        this.select();
+        this.updateCurrentElementInDOM();
+      }
+    }
   },
 
   /* `keydownArrows` select result with arrows key. */
