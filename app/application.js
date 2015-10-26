@@ -1,13 +1,7 @@
 /*
- *  CompleteIt.js is a small library to autcomplete results in search inputs.
- *  It is designed to work with a remote endpoint that serves autocomplete results,
- *  (i.e. ElasticSearch, Zend).
- *
- *  Autocomplete results will be ordered by score field, and each result will be
- *  cached with localStorage (if supported) or in memory.
- *
- *  Dependencies is lodash.throttle.
- *
+ *  CompleteIt.js. A small lib to autocomplete results in search inputs.
+ *  license MIT (c) Lucio Baglione 2015
+ *  https://github.com/dehlic/completeIt
  */
 
 'use strict';
@@ -132,6 +126,7 @@ var CompleteIt = {
      *    autocomplete. The library assumes this list as ordered.
      *    By default it just pass the results to the next object.
      *    It accepts two args: `results`, the list of results and `input`, the actual input value.
+     *  `ajax`: is the function used for remote requests. It must return a `Promise`.
      *  `cache`: describes the cache strategy. 
      *    It can be `false`, `memory`, `sessionStorage`, `localStorage`
      *    By defaults will use `localStorage`.

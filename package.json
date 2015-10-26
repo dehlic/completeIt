@@ -1,6 +1,6 @@
 {
   "name": "complete-it",
-  "description": "A simple autocomplete plugin.",
+  "description": "A simple autocomplete lib.",
   "author": "Lucio Baglione (coire1@gmail.com)",
   "version": "0.0.1",
   "main": "app/application.js",

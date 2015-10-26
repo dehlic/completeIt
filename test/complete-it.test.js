@@ -28,10 +28,4 @@ describe('CompleteIt', function () {
       document.body.querySelector('.ghost-input').should.have.attr('autocapitalize', 'off');
     });
   });
-  describe('Filling input', function () {
-    beforeEach(function() {
-      var $form = document.body.querySelector('#autocomplete');
-      require('application').init($form);
-    });
-  });
 });
