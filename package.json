@@ -16,10 +16,10 @@
     "start": "brunch watch --server",
     "test": "./node_modules/.bin/karma start karma.conf.js",
     "build-browser": "npm run browserify && npm run uglify",
-    "browserify": "browserify --standalone CompleteIt dist-node | derequire > dist/complete-it.js",
+    "browserify": "browserify --standalone CompleteIt app/application.js | derequire > dist/complete-it.js",
     "uglify": "uglifyjs -mc < dist/complete-it.js > dist/complete-it.min.js",
-    "clean": "rimraf dist dist-node && mkdirp dist dist-node",
-    "build": "npm run clean && npm run build-node && npm run build-browser",
+    "clean": "rimraf dist && mkdirp dist",
+    "build": "npm run clean && npm run build-browser",
     "prepublish": "npm run build"
   },
   "dependencies": {
