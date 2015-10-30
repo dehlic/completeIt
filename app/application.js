@@ -6,6 +6,13 @@
 
 'use strict';
 
+var throttle;
+if (typeof _ !== 'undefined') {
+  throttle = _.throttle;
+} else {
+  throttle = require('lodash.throttle');
+}
+
 var CompleteIt = {
 
   /* `$listElements is the cached version of each DOM element` */
@@ -588,7 +595,7 @@ var CompleteIt = {
      *  This event is throttled according `throttleTime`.
      */
 
-    this.$element.addEventListener('performQuery', _.throttle(
+    this.$element.addEventListener('performQuery', throttle(
       this.utils.bind(this.performQuery, this),
       this.options.throttleTime,
       {

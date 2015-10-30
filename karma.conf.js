@@ -13,6 +13,7 @@ module.exports = function(config) {
     // list of files / patterns to load in the browser
     files: [
       'public/javascripts/vendor.js',
+      'public/javascripts/test-vendor.js',
       'public/javascripts/app.js',
       'test/*.test.js',
       {

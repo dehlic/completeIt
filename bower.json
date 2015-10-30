@@ -17,6 +17,8 @@
   ],
   "devDependencies": {
     "jquery": "~2.1.4",
-    "lodash": "~3.10.1"
+    "lodash": "~3.10.1",
+    "chai": "~3.4.0",
+    "chai-dom": "~1.2.0"
   }
 }

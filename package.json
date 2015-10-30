@@ -3,8 +3,8 @@
   "description": "A simple autocomplete lib with an aggressive cache system.",
   "author": "Lucio Baglione (coire1@gmail.com)",
   "version": "0.0.1",
-  "main": "app/application.js",
-  "jsnext:main": "app/application.js",
+  "main": "dist-node/complete-it.js",
+  "jsnext:main": "dist-node/complete-it.js",
   "jspm": {
     "main": "dist/complete-it.js"
   },
@@ -15,11 +15,12 @@
   "scripts": {
     "start": "brunch watch --server",
     "test": "./node_modules/.bin/karma start karma.conf.js",
+    "build-node": "babel app/application.js --out-file dist-node/complete-it.js",
     "build-browser": "npm run browserify && npm run uglify",
-    "browserify": "browserify --standalone CompleteIt app/application.js | derequire > dist/complete-it.js",
+    "browserify": "browserify --standalone CompleteIt dist-node/complete-it.js | derequire > dist/complete-it.js",
     "uglify": "uglifyjs -mc < dist/complete-it.js > dist/complete-it.min.js",
-    "clean": "rimraf dist && mkdirp dist",
-    "build": "npm run clean && npm run build-browser",
+    "clean": "rimraf dist dist-node && mkdirp dist dist-node",
+    "build": "npm run clean && npm run build-node && npm run build-browser",
     "prepublish": "npm run build"
   },
   "dependencies": {
