@@ -31,7 +31,7 @@ CompleteIt.init(form);
 *  `throttleTime`: the minimum interval between remote queries. *(default: 500ms)*.
 *  `minLength`: the autocomplete starts if the input value length is at least `minLength`. *(default: 5)*.
 *  `cache`: describes the cache strategy. More info in [cache section](#cache).
-*  `mapAndFilter`: is the function applied to ajax callback. More info in [mapAndFilter section](#mapAndFilter).
+*  `middleware`: is the function applied to ajax callback. More info in [middleware section](#middleware).
 *  `cacheExpires`: the cache will expires in `cacheExpires`. The value is in seconds. *default: 604800 (1 week)*.
 
 ## Cache
@@ -52,7 +52,7 @@ without being influenced by the ajax library that you will choose.
 In this way you can also use your specific option for the remote query and CompleteIt.js
 doesn't need to know anything.
 The `ajax` options accepts a parameter (`value`) that corresponds to the current input value.
-The response from the request will be passed to [mapAndFilter function](#mapAndFilter) and then
+The response from the request will be passed to [middleware function](#middleware) and then
 processed by the library.
 
 ### jQuery example
@@ -100,7 +100,7 @@ CompleteIt.init(form, {
 });
 ```
 
-## mapAndFilter
+## middleware
 
 CompleteIt.js is designed only to provide an UI for the autocomplete and for throttle and cache
 the remote queries. 
@@ -108,7 +108,7 @@ It doesn't want to know anything about your results.
 To make things simple CompleteIt.js assumes that the result of the remote query is an array of objects,
 each object with a `content` key with the content of the autocomplete. This array should also be ordered
 as you want.
-To uniform your result with the form requested by the library you have the `mapAndFilter` option.
+To uniform your result with the form requested by the library you have the `middleware` option.
 It accepts, two parameters (`results`, the response received from the query and `input`, the current
 input value).
 With this option you can also manipulate the order and form of your results, if you need to do it at
@@ -116,7 +116,7 @@ client side.
 
 ### Standard form of response
 
-This is the array of object that ***MUST*** return from `mapAndFilter`.
+This is the array of object that ***MUST*** return from `middleware`.
 
 ```
 [
@@ -130,7 +130,7 @@ This is the array of object that ***MUST*** return from `mapAndFilter`.
 ]
 ```
 
-### mapAndFilter basic example
+### middleware basic example
 
 This example simply change the content key. The response objects contains the autocompleted result
 in the `text` key that will be changed to the required `content` key, using [lodash](https://lodash.com/) `map` method.
@@ -141,7 +141,7 @@ var CompleteIt = require('complete-it');
 var form = document.body.querySelector('#autocomplete');
 
 CompleteIt.init(form, {
-  mapAndFilter: function (results, value) {
+  middleware: function (results, value) {
     var temporaryElements = _.map(results, function(element) {
       element.content = element.text; // Use the `content` key
       return element;
@@ -154,7 +154,7 @@ CompleteIt.init(form, {
 Don't worry if your response contains unuseful keys, CompleteIt.js will clean it for you.
 
 
-### mapAndFilter order example
+### middleware order example
 
 This example change the `content` key and order the results by a `_score` key, using [lodash](https://lodash.com/) `map` and `orderBy`
 methods.
@@ -165,7 +165,7 @@ var CompleteIt = require('complete-it');
 var form = document.body.querySelector('#autocomplete');
 
 CompleteIt.init(form, {
-  mapAndFilter: function (results, value) {
+  middleware: function (results, value) {
     var temporaryElements = _.map(results, function(element) {
       element.content = element.text; // Use the `content` key
       return element;

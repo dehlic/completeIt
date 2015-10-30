@@ -40,7 +40,7 @@ var CompleteIt = {
 
   /*
    *  `elements` is an array that contains the current elements of the list.
-   *  It is build from the return list of elements returned by `mapAndFilter`
+   *  It is build from the return list of elements returned by `middleware`
    *  options and the formatted and cleaned by `formateElements`.
    *  It is used to build the list in the DOM.
    *  The final form of each element is:
@@ -128,7 +128,7 @@ var CompleteIt = {
      *
      *  `throttleTime`: the minimum interval between remote queries (defaults to 500ms)
      *  `minLength`: the autocomplete starts if the input value length is at least `minLength`
-     *  `mapAndFilter`: is the function applied to ajax callback.
+     *  `middleware`: is the function applied to ajax callback.
      *    It must produce an array of objects, each object with a `content` key with the content of the
      *    autocomplete. The library assumes this list as ordered.
      *    By default it just pass the results to the next object.
@@ -144,7 +144,7 @@ var CompleteIt = {
     var defaultOptions = {
       throttleTime: 500,
       minLength: 5,
-      mapAndFilter: function (results, input) {
+      middleware: function (results, input) {
         console.log(input);
         return results;
       },
@@ -290,13 +290,13 @@ var CompleteIt = {
 
   /*  
    *  `ajaxCallback` is the callback of the ajax request.
-   *  It takes a list of results, applies the `mapAndFilter` function (taken from options),
+   *  It takes a list of results, applies the `middleware` function (taken from options),
    *  formats results according standard and cleaning unuseful keys.
    *  It also update the current `elements` object, cache the query and update DOM.
    */
 
   ajaxCallback: function (response) {
-    var temporaryElements = this.options.mapAndFilter(response, this.input);
+    var temporaryElements = this.options.middleware(response, this.input);
     temporaryElements = this.formatElements(temporaryElements);
     this.elements = temporaryElements;
     this.updateQueries();
