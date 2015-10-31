@@ -40,7 +40,7 @@
         }); 
       };
 
-      var myMapAndFilter = function(response, input) {
+      var myMiddleware = function(response, input) {
         var temporaryItems = boostAndFormat(response, input);
         temporaryItems = sortTemporaryElements(temporaryItems);
         return temporaryItems;
@@ -49,7 +49,7 @@
       var $form = document.body.querySelector('#autocomplete');
       require('application').init($form, {
         cache: 'localStorage',
-        mapAndFilter: myMapAndFilter,
+        middleware: myMiddleware,
         ajax: function (input) {
           return $.ajax({
             url: 'http://latin-lovers-php/api/autocomplete',

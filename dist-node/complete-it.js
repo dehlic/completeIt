@@ -100,7 +100,7 @@ var CompleteIt = {
 
   HASHPREFIX: 'completeit_',
 
-  init: function ($element, options) {
+  init: function init($element, options) {
 
     /*  `$element` is the DOM element CompleteIt is attached to.
      *  It is a form that contains an `input[text]`
@@ -149,11 +149,11 @@ var CompleteIt = {
     var defaultOptions = {
       throttleTime: 500,
       minLength: 5,
-      middleware: function (results, input) {
+      middleware: function middleware(results, input) {
         console.log(input);
         return results;
       },
-      ajax: function (input) {
+      ajax: function ajax(input) {
         console.log(input);
         return new Promise();
       },
@@ -161,7 +161,7 @@ var CompleteIt = {
       cacheExpires: 604800
     };
 
-    options = (options) ? options : {};
+    options = options ? options : {};
 
     this.options = this.utils.extend(defaultOptions, options);
 
@@ -184,7 +184,7 @@ var CompleteIt = {
    *  cases, a test for browser support will be performed.
    */
 
-  initCache: function () {
+  initCache: function initCache() {
     if (this.options.cache === 'localStorage') {
       this.storageSupport = this.supportsStorage('localStorage');
       this.initStorage(localStorage);
@@ -202,7 +202,7 @@ var CompleteIt = {
    *  will degrade do `memory`.
    */
 
-  initStorage: function (storageType) {
+  initStorage: function initStorage(storageType) {
     if (this.storageSupport) {
       this.cleanStorage(storageType);
       this.queries = storageType;
@@ -217,14 +217,14 @@ var CompleteIt = {
    *   and eventually remove them.
    */
 
-  cleanStorage: function (storageType) {
+  cleanStorage: function cleanStorage(storageType) {
     var toRemove = [];
     /* First get the keys to be removed */
     for (var i = 0; i < storageType.length; i++) {
       var key = storageType.key(i);
       if (key.indexOf(this.HASHPREFIX) > -1) {
         var element = JSON.parse(storageType.getItem(key));
-        if ((Math.floor(Date.now()/1000) - element.createdAt) > this.options.cacheExpires) {
+        if (Math.floor(Date.now() / 1000) - element.createdAt > this.options.cacheExpires) {
           toRemove.push(key);
         }
       }
@@ -241,7 +241,7 @@ var CompleteIt = {
    *  TODO: Design an error strategy
    */
 
-  updateQueries: function () {
+  updateQueries: function updateQueries() {
     if (this.queries) {
       var hash = this.utils.indexer(this.input, this);
       if (!this.queries[hash]) {
@@ -263,7 +263,7 @@ var CompleteIt = {
    * to check the expiration of the cached query. It is also necessary to stringify the object.
    */
 
-  storeQuery: function (query) {
+  storeQuery: function storeQuery(query) {
     if (this.storageSupport) {
       query.createdAt = Math.floor(Date.now() / 1000);
       query = JSON.stringify(query);
@@ -277,15 +277,15 @@ var CompleteIt = {
    *  has to be converted from string to JSON.
    */
 
-  parseElements: function (cached) {
-    return (this.storageSupport) ? JSON.parse(cached).elements : cached.elements;
+  parseElements: function parseElements(cached) {
+    return this.storageSupport ? JSON.parse(cached).elements : cached.elements;
   },
 
   /*
    *  Checks for localStorage or sessionStorage support.
    */
 
-  supportsStorage: function (storageType) {
+  supportsStorage: function supportsStorage(storageType) {
     try {
       return storageType in window && window[storageType] !== null;
     } catch (e) {
@@ -300,7 +300,7 @@ var CompleteIt = {
    *  It also update the current `elements` object, cache the query and update DOM.
    */
 
-  ajaxCallback: function (response) {
+  ajaxCallback: function ajaxCallback(response) {
     var temporaryElements = this.options.middleware(response, this.input);
     temporaryElements = this.formatElements(temporaryElements);
     this.elements = temporaryElements;
@@ -314,17 +314,17 @@ var CompleteIt = {
    *  the execute the callback.
    */
 
-  performQuery: function () {
+  performQuery: function performQuery() {
     var promise = this.options.ajax(this.input);
     promise.then(this.utils.bind(this.ajaxCallback, this));
   },
-  
+
   /*  `formatElements` takes an array of results, each one with a `content` key.
    *  It formats the content, highlights the exact match with input, and it cleans
    *  the unuseful properties.
    */
 
-  formatElements: function (temporaryElements) {
+  formatElements: function formatElements(temporaryElements) {
     for (var i = 0; i < temporaryElements.length; i++) {
       var element = temporaryElements[i];
       if (element.content) {
@@ -340,7 +340,7 @@ var CompleteIt = {
       }
       /*  Remove every key that is not `content` or `formattedContent`. */
       for (var key in element) {
-        if ((key !== 'content') && (key !== 'formattedContent')) {
+        if (key !== 'content' && key !== 'formattedContent') {
           delete element[key];
         }
       }
@@ -352,9 +352,9 @@ var CompleteIt = {
    *  `keydownProxy` routes to specific callback according to keycode.
    */
 
-  keydownProxy: function (e) {
+  keydownProxy: function keydownProxy(e) {
     e.stopPropagation();
-    if ((e.which === this.UPARROWKEY) || (e.which === this.DOWNARROWKEY)) {
+    if (e.which === this.UPARROWKEY || e.which === this.DOWNARROWKEY) {
       this.keydownArrows(e);
     } else if (e.which === this.ENTERKEY) {
       this.select(true);
@@ -373,7 +373,7 @@ var CompleteIt = {
    *  the query from the cache
    */
 
-  keydownOther: function () {
+  keydownOther: function keydownOther() {
 
     /*  
      *  Update current `input` value and cache a genuine oldInput.
@@ -393,7 +393,7 @@ var CompleteIt = {
        *  The key is the hashed query.
        */
 
-      var cached = (this.queries) ? this.queries[this.utils.indexer(this.input, this)] : false;
+      var cached = this.queries ? this.queries[this.utils.indexer(this.input, this)] : false;
       if (cached) {
         /*
          *  The current query was already performed. Use that results as current query.
@@ -415,14 +415,14 @@ var CompleteIt = {
 
   /* `keydownEsc` restore the old input value and close the $list. */
 
-  keydownEsc: function () {
+  keydownEsc: function keydownEsc() {
     this.unselect();
   },
 
   /* `keydownRightArrow` completes the input with `$ghostInput` value if it isn't null */
 
-  keydownRightArrow: function (e) {
-    if((this.$ghostInput.value.length > 0) && (this.elements.length)) {
+  keydownRightArrow: function keydownRightArrow(e) {
+    if (this.$ghostInput.value.length > 0 && this.elements.length) {
       if (this.$ghostInput.value === this.elements[0].content) {
         e.preventDefault();
         /* Set the current element as the first of the list (the same in $ghostInput). */
@@ -435,11 +435,11 @@ var CompleteIt = {
 
   /* `keydownArrows` select result with arrows key. */
 
-  keydownArrows: function (e) {
+  keydownArrows: function keydownArrows(e) {
     var possibleIndex;
-    var toAdd = (e.which === this.UPARROWKEY) ? -1 : 1;
+    var toAdd = e.which === this.UPARROWKEY ? -1 : 1;
     possibleIndex = this.currentIndex + toAdd;
-    if ((possibleIndex >= 0) && (possibleIndex <= (this.elements.length - 1))) {
+    if (possibleIndex >= 0 && possibleIndex <= this.elements.length - 1) {
       this.currentIndex = possibleIndex;
       this.updateCurrentElementInDOM();
       this.select();
@@ -453,7 +453,7 @@ var CompleteIt = {
    *  It sets the `currentIndex` according the index of the element that gets hovered.
    */
 
-  selectByHover: function (e) {
+  selectByHover: function selectByHover(e) {
     if (e.target && e.target.nodeName === 'LI') {
       var $target = e.target;
       var currentIndex = this.utils.elementIndex($target);
@@ -468,7 +468,7 @@ var CompleteIt = {
    *  It calls `select` forcing the form submission.
    */
 
-  selectByClick: function (e) {
+  selectByClick: function selectByClick(e) {
     if (e.target && e.target.nodeName === 'LI') {
       this.selectByHover(e);
       this.select(true);
@@ -480,7 +480,7 @@ var CompleteIt = {
    *  attaching the `current` class.
    */
 
-  updateCurrentElementInDOM: function () {
+  updateCurrentElementInDOM: function updateCurrentElementInDOM() {
     for (var i = 0; i < this.$listElements.length; i++) {
       if (i === this.currentIndex) {
         this.$listElements[i].classList.add('current');
@@ -495,10 +495,10 @@ var CompleteIt = {
    *  It also open the list in the DOM applying the `open` class.
    */
 
-  updateDom: function () {
+  updateDom: function updateDom() {
     this.currentIndex = -1;
     this.$list.classList.remove('open');
-    while(this.$list.firstChild) {
+    while (this.$list.firstChild) {
       this.$list.removeChild(this.$list.firstChild);
     }
     for (var i = 0; i < this.elements.length; i++) {
@@ -515,7 +515,7 @@ var CompleteIt = {
    *  `updateGhostInput` is used to synchronize input and ghost input.
    */
 
-  updateGhostInput: function (value) {
+  updateGhostInput: function updateGhostInput(value) {
     this.$ghostInput.value = value;
   },
 
@@ -524,7 +524,7 @@ var CompleteIt = {
    *  starts as `input`.
    */
 
-  ghostInputApparition: function () {
+  ghostInputApparition: function ghostInputApparition() {
     if (this.elements.length) {
       var firstElementValue = this.elements[0].content;
       if (firstElementValue && firstElementValue.indexOf(this.cachedInput) === 0) {
@@ -538,7 +538,7 @@ var CompleteIt = {
    *  if `force` is true the form will be submitted (to use with click).
    */
 
-  select: function (force) {
+  select: function select(force) {
 
     /*  Set the input value based on `currentIndex`. */
     if (this.currentIndex > -1) {
@@ -559,55 +559,47 @@ var CompleteIt = {
    *  input value.
    */
 
-  unselect: function () {
+  unselect: function unselect() {
     this.$list.classList.remove('open');
     this.unselectIndex();
     this.$input.value = this.cachedInput;
   },
-
 
   /*  
    *  `unselectIndex` resets `currentIndex`.
    *  It is also the callback for the `mouseout` event on a list element.
    */
 
-  unselectIndex: function () {
+  unselectIndex: function unselectIndex() {
     this.currentIndex = -1;
     this.updateCurrentElementInDOM();
   },
-
 
   /* 
    *  `submitHandler` is the callback for the submit event on the form.
    *  It only prevents the submit if `submitPrevented` is true.
    */
 
-  submitHandler: function (e) {
+  submitHandler: function submitHandler(e) {
     if (this.submitPrevented) {
       e.preventDefault();
     }
   },
 
-
-
   /*
    *  `bindEvents()` is responsible to attach DOM events.
    */
 
-  bindEvents: function () {
+  bindEvents: function bindEvents() {
     /*
      *  Listen for `performQuery` to make ajax query.
      *  This event is throttled according `throttleTime`.
      */
 
-    this.$element.addEventListener('performQuery', throttle(
-      this.utils.bind(this.performQuery, this),
-      this.options.throttleTime,
-      {
-        leading: true,
-        trailing: true
-      }
-    ));
+    this.$element.addEventListener('performQuery', throttle(this.utils.bind(this.performQuery, this), this.options.throttleTime, {
+      leading: true,
+      trailing: true
+    }));
 
     /*  Listen for keyup events and use a proxy to handle them.  */
     this.$element.addEventListener('keyup', this.utils.bind(this.keydownProxy, this));
@@ -621,7 +613,6 @@ var CompleteIt = {
     this.$list.addEventListener('mouseout', this.utils.bind(this.unselectIndex, this));
   },
 
-
   /* 
    *  `utils` is an object that contains some function utility to be used in
    *  the lib.
@@ -632,7 +623,7 @@ var CompleteIt = {
      *  `bind` just bind a context to a function.
      */
 
-    bind: function(f, scope) {
+    bind: function bind(f, scope) {
       return function () {
         f.apply(scope, arguments);
       };
@@ -642,7 +633,7 @@ var CompleteIt = {
      * `extend` is used to defaults options.
      */
 
-    extend: function () {
+    extend: function extend() {
       var extended = {};
       for (var key in arguments) {
         var argument = arguments[key];
@@ -659,7 +650,7 @@ var CompleteIt = {
      *  `elementIndex` is used to get the index of an element in a DOM list,
      *  checking for previousSibling.
      */
-    elementIndex: function(element) {
+    elementIndex: function elementIndex(element) {
       var index = 0;
       while (element.previousSibling !== null) {
         index++;
@@ -674,14 +665,14 @@ var CompleteIt = {
      *  http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
      */
 
-    indexer: function (query, context) {
+    indexer: function indexer(query, context) {
       var hash = 0;
       var i;
       var chr;
-      var len  = query.length;
+      var len = query.length;
       for (i = 0, len; i < len; i++) {
-        chr   = query.charCodeAt(i);
-        hash  = ((hash << 5) - hash) + chr;
+        chr = query.charCodeAt(i);
+        hash = (hash << 5) - hash + chr;
         hash |= 0; // Convert to 32bit integer
       }
       return context.HASHPREFIX + hash;
@@ -690,5 +681,3 @@ var CompleteIt = {
 };
 
 module.exports = CompleteIt;
-
-

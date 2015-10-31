@@ -1,12 +1,37 @@
 {
-  "name": "CompleteIt.js",
+  "name": "complete-it",
   "version": "0.0.1",
-  "main": "public/app.js",
-  "dependencies": {
-    "lodash": "^3.10.1",
-    "jquery": "^2.1.4",
+  "authors": [
+    "Lucio Baglione <coire1@gmail.com>"
+  ],
+  "description": "A simple autocomplete lib with an aggressive cache system.",
+  "main": "dist/complete-it.js",
+  "homepage": "https://github.com/dehlic/completeIt",
+  "license": "Apache-2.0",
+  "moduleType": [
+    "amd",
+    "umd",
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "autocomplete",
+    "cache",
+    "search",
+    "ajax",
+    "throttle"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "jquery": "~2.1.4",
+    "lodash": "~3.10.1",
     "chai": "~3.4.0",
     "chai-dom": "~1.2.0"
-  },
-  "overrides": {}
+  }
 }

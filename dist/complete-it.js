@@ -1,3 +1,4 @@
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.CompleteIt = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /*
  *  CompleteIt.js. A small lib to autocomplete results in search inputs.
  *  license MIT (c) Lucio Baglione 2015
@@ -15,7 +16,7 @@ var throttle;
 if (typeof _ !== 'undefined') {
   throttle = _.throttle;
 } else {
-  throttle = require('lodash.throttle');
+  throttle = _dereq_('lodash.throttle');
 }
 
 var CompleteIt = {
@@ -100,7 +101,7 @@ var CompleteIt = {
 
   HASHPREFIX: 'completeit_',
 
-  init: function ($element, options) {
+  init: function init($element, options) {
 
     /*  `$element` is the DOM element CompleteIt is attached to.
      *  It is a form that contains an `input[text]`
@@ -149,11 +150,11 @@ var CompleteIt = {
     var defaultOptions = {
       throttleTime: 500,
       minLength: 5,
-      middleware: function (results, input) {
+      middleware: function middleware(results, input) {
         console.log(input);
         return results;
       },
-      ajax: function (input) {
+      ajax: function ajax(input) {
         console.log(input);
         return new Promise();
       },
@@ -161,7 +162,7 @@ var CompleteIt = {
       cacheExpires: 604800
     };
 
-    options = (options) ? options : {};
+    options = options ? options : {};
 
     this.options = this.utils.extend(defaultOptions, options);
 
@@ -184,7 +185,7 @@ var CompleteIt = {
    *  cases, a test for browser support will be performed.
    */
 
-  initCache: function () {
+  initCache: function initCache() {
     if (this.options.cache === 'localStorage') {
       this.storageSupport = this.supportsStorage('localStorage');
       this.initStorage(localStorage);
@@ -202,7 +203,7 @@ var CompleteIt = {
    *  will degrade do `memory`.
    */
 
-  initStorage: function (storageType) {
+  initStorage: function initStorage(storageType) {
     if (this.storageSupport) {
       this.cleanStorage(storageType);
       this.queries = storageType;
@@ -217,14 +218,14 @@ var CompleteIt = {
    *   and eventually remove them.
    */
 
-  cleanStorage: function (storageType) {
+  cleanStorage: function cleanStorage(storageType) {
     var toRemove = [];
     /* First get the keys to be removed */
     for (var i = 0; i < storageType.length; i++) {
       var key = storageType.key(i);
       if (key.indexOf(this.HASHPREFIX) > -1) {
         var element = JSON.parse(storageType.getItem(key));
-        if ((Math.floor(Date.now()/1000) - element.createdAt) > this.options.cacheExpires) {
+        if (Math.floor(Date.now() / 1000) - element.createdAt > this.options.cacheExpires) {
           toRemove.push(key);
         }
       }
@@ -241,7 +242,7 @@ var CompleteIt = {
    *  TODO: Design an error strategy
    */
 
-  updateQueries: function () {
+  updateQueries: function updateQueries() {
     if (this.queries) {
       var hash = this.utils.indexer(this.input, this);
       if (!this.queries[hash]) {
@@ -263,7 +264,7 @@ var CompleteIt = {
    * to check the expiration of the cached query. It is also necessary to stringify the object.
    */
 
-  storeQuery: function (query) {
+  storeQuery: function storeQuery(query) {
     if (this.storageSupport) {
       query.createdAt = Math.floor(Date.now() / 1000);
       query = JSON.stringify(query);
@@ -277,15 +278,15 @@ var CompleteIt = {
    *  has to be converted from string to JSON.
    */
 
-  parseElements: function (cached) {
-    return (this.storageSupport) ? JSON.parse(cached).elements : cached.elements;
+  parseElements: function parseElements(cached) {
+    return this.storageSupport ? JSON.parse(cached).elements : cached.elements;
   },
 
   /*
    *  Checks for localStorage or sessionStorage support.
    */
 
-  supportsStorage: function (storageType) {
+  supportsStorage: function supportsStorage(storageType) {
     try {
       return storageType in window && window[storageType] !== null;
     } catch (e) {
@@ -300,7 +301,7 @@ var CompleteIt = {
    *  It also update the current `elements` object, cache the query and update DOM.
    */
 
-  ajaxCallback: function (response) {
+  ajaxCallback: function ajaxCallback(response) {
     var temporaryElements = this.options.middleware(response, this.input);
     temporaryElements = this.formatElements(temporaryElements);
     this.elements = temporaryElements;
@@ -314,17 +315,17 @@ var CompleteIt = {
    *  the execute the callback.
    */
 
-  performQuery: function () {
+  performQuery: function performQuery() {
     var promise = this.options.ajax(this.input);
     promise.then(this.utils.bind(this.ajaxCallback, this));
   },
-  
+
   /*  `formatElements` takes an array of results, each one with a `content` key.
    *  It formats the content, highlights the exact match with input, and it cleans
    *  the unuseful properties.
    */
 
-  formatElements: function (temporaryElements) {
+  formatElements: function formatElements(temporaryElements) {
     for (var i = 0; i < temporaryElements.length; i++) {
       var element = temporaryElements[i];
       if (element.content) {
@@ -340,7 +341,7 @@ var CompleteIt = {
       }
       /*  Remove every key that is not `content` or `formattedContent`. */
       for (var key in element) {
-        if ((key !== 'content') && (key !== 'formattedContent')) {
+        if (key !== 'content' && key !== 'formattedContent') {
           delete element[key];
         }
       }
@@ -352,9 +353,9 @@ var CompleteIt = {
    *  `keydownProxy` routes to specific callback according to keycode.
    */
 
-  keydownProxy: function (e) {
+  keydownProxy: function keydownProxy(e) {
     e.stopPropagation();
-    if ((e.which === this.UPARROWKEY) || (e.which === this.DOWNARROWKEY)) {
+    if (e.which === this.UPARROWKEY || e.which === this.DOWNARROWKEY) {
       this.keydownArrows(e);
     } else if (e.which === this.ENTERKEY) {
       this.select(true);
@@ -373,7 +374,7 @@ var CompleteIt = {
    *  the query from the cache
    */
 
-  keydownOther: function () {
+  keydownOther: function keydownOther() {
 
     /*  
      *  Update current `input` value and cache a genuine oldInput.
@@ -393,7 +394,7 @@ var CompleteIt = {
        *  The key is the hashed query.
        */
 
-      var cached = (this.queries) ? this.queries[this.utils.indexer(this.input, this)] : false;
+      var cached = this.queries ? this.queries[this.utils.indexer(this.input, this)] : false;
       if (cached) {
         /*
          *  The current query was already performed. Use that results as current query.
@@ -415,14 +416,14 @@ var CompleteIt = {
 
   /* `keydownEsc` restore the old input value and close the $list. */
 
-  keydownEsc: function () {
+  keydownEsc: function keydownEsc() {
     this.unselect();
   },
 
   /* `keydownRightArrow` completes the input with `$ghostInput` value if it isn't null */
 
-  keydownRightArrow: function (e) {
-    if((this.$ghostInput.value.length > 0) && (this.elements.length)) {
+  keydownRightArrow: function keydownRightArrow(e) {
+    if (this.$ghostInput.value.length > 0 && this.elements.length) {
       if (this.$ghostInput.value === this.elements[0].content) {
         e.preventDefault();
         /* Set the current element as the first of the list (the same in $ghostInput). */
@@ -435,11 +436,11 @@ var CompleteIt = {
 
   /* `keydownArrows` select result with arrows key. */
 
-  keydownArrows: function (e) {
+  keydownArrows: function keydownArrows(e) {
     var possibleIndex;
-    var toAdd = (e.which === this.UPARROWKEY) ? -1 : 1;
+    var toAdd = e.which === this.UPARROWKEY ? -1 : 1;
     possibleIndex = this.currentIndex + toAdd;
-    if ((possibleIndex >= 0) && (possibleIndex <= (this.elements.length - 1))) {
+    if (possibleIndex >= 0 && possibleIndex <= this.elements.length - 1) {
       this.currentIndex = possibleIndex;
       this.updateCurrentElementInDOM();
       this.select();
@@ -453,7 +454,7 @@ var CompleteIt = {
    *  It sets the `currentIndex` according the index of the element that gets hovered.
    */
 
-  selectByHover: function (e) {
+  selectByHover: function selectByHover(e) {
     if (e.target && e.target.nodeName === 'LI') {
       var $target = e.target;
       var currentIndex = this.utils.elementIndex($target);
@@ -468,7 +469,7 @@ var CompleteIt = {
    *  It calls `select` forcing the form submission.
    */
 
-  selectByClick: function (e) {
+  selectByClick: function selectByClick(e) {
     if (e.target && e.target.nodeName === 'LI') {
       this.selectByHover(e);
       this.select(true);
@@ -480,7 +481,7 @@ var CompleteIt = {
    *  attaching the `current` class.
    */
 
-  updateCurrentElementInDOM: function () {
+  updateCurrentElementInDOM: function updateCurrentElementInDOM() {
     for (var i = 0; i < this.$listElements.length; i++) {
       if (i === this.currentIndex) {
         this.$listElements[i].classList.add('current');
@@ -495,10 +496,10 @@ var CompleteIt = {
    *  It also open the list in the DOM applying the `open` class.
    */
 
-  updateDom: function () {
+  updateDom: function updateDom() {
     this.currentIndex = -1;
     this.$list.classList.remove('open');
-    while(this.$list.firstChild) {
+    while (this.$list.firstChild) {
       this.$list.removeChild(this.$list.firstChild);
     }
     for (var i = 0; i < this.elements.length; i++) {
@@ -515,7 +516,7 @@ var CompleteIt = {
    *  `updateGhostInput` is used to synchronize input and ghost input.
    */
 
-  updateGhostInput: function (value) {
+  updateGhostInput: function updateGhostInput(value) {
     this.$ghostInput.value = value;
   },
 
@@ -524,7 +525,7 @@ var CompleteIt = {
    *  starts as `input`.
    */
 
-  ghostInputApparition: function () {
+  ghostInputApparition: function ghostInputApparition() {
     if (this.elements.length) {
       var firstElementValue = this.elements[0].content;
       if (firstElementValue && firstElementValue.indexOf(this.cachedInput) === 0) {
@@ -538,7 +539,7 @@ var CompleteIt = {
    *  if `force` is true the form will be submitted (to use with click).
    */
 
-  select: function (force) {
+  select: function select(force) {
 
     /*  Set the input value based on `currentIndex`. */
     if (this.currentIndex > -1) {
@@ -559,55 +560,47 @@ var CompleteIt = {
    *  input value.
    */
 
-  unselect: function () {
+  unselect: function unselect() {
     this.$list.classList.remove('open');
     this.unselectIndex();
     this.$input.value = this.cachedInput;
   },
-
 
   /*  
    *  `unselectIndex` resets `currentIndex`.
    *  It is also the callback for the `mouseout` event on a list element.
    */
 
-  unselectIndex: function () {
+  unselectIndex: function unselectIndex() {
     this.currentIndex = -1;
     this.updateCurrentElementInDOM();
   },
-
 
   /* 
    *  `submitHandler` is the callback for the submit event on the form.
    *  It only prevents the submit if `submitPrevented` is true.
    */
 
-  submitHandler: function (e) {
+  submitHandler: function submitHandler(e) {
     if (this.submitPrevented) {
       e.preventDefault();
     }
   },
 
-
-
   /*
    *  `bindEvents()` is responsible to attach DOM events.
    */
 
-  bindEvents: function () {
+  bindEvents: function bindEvents() {
     /*
      *  Listen for `performQuery` to make ajax query.
      *  This event is throttled according `throttleTime`.
      */
 
-    this.$element.addEventListener('performQuery', throttle(
-      this.utils.bind(this.performQuery, this),
-      this.options.throttleTime,
-      {
-        leading: true,
-        trailing: true
-      }
-    ));
+    this.$element.addEventListener('performQuery', throttle(this.utils.bind(this.performQuery, this), this.options.throttleTime, {
+      leading: true,
+      trailing: true
+    }));
 
     /*  Listen for keyup events and use a proxy to handle them.  */
     this.$element.addEventListener('keyup', this.utils.bind(this.keydownProxy, this));
@@ -621,7 +614,6 @@ var CompleteIt = {
     this.$list.addEventListener('mouseout', this.utils.bind(this.unselectIndex, this));
   },
 
-
   /* 
    *  `utils` is an object that contains some function utility to be used in
    *  the lib.
@@ -632,7 +624,7 @@ var CompleteIt = {
      *  `bind` just bind a context to a function.
      */
 
-    bind: function(f, scope) {
+    bind: function bind(f, scope) {
       return function () {
         f.apply(scope, arguments);
       };
@@ -642,7 +634,7 @@ var CompleteIt = {
      * `extend` is used to defaults options.
      */
 
-    extend: function () {
+    extend: function extend() {
       var extended = {};
       for (var key in arguments) {
         var argument = arguments[key];
@@ -659,7 +651,7 @@ var CompleteIt = {
      *  `elementIndex` is used to get the index of an element in a DOM list,
      *  checking for previousSibling.
      */
-    elementIndex: function(element) {
+    elementIndex: function elementIndex(element) {
       var index = 0;
       while (element.previousSibling !== null) {
         index++;
@@ -674,14 +666,14 @@ var CompleteIt = {
      *  http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
      */
 
-    indexer: function (query, context) {
+    indexer: function indexer(query, context) {
       var hash = 0;
       var i;
       var chr;
-      var len  = query.length;
+      var len = query.length;
       for (i = 0, len; i < len; i++) {
-        chr   = query.charCodeAt(i);
-        hash  = ((hash << 5) - hash) + chr;
+        chr = query.charCodeAt(i);
+        hash = (hash << 5) - hash + chr;
         hash |= 0; // Convert to 32bit integer
       }
       return context.HASHPREFIX + hash;
@@ -691,4 +683,478 @@ var CompleteIt = {
 
 module.exports = CompleteIt;
 
+},{"lodash.throttle":2}],2:[function(_dereq_,module,exports){
+/**
+ * lodash 3.0.4 (Custom Build) <https://lodash.com/>
+ * Build: `lodash modern modularize exports="npm" -o ./`
+ * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ * Available under MIT license <https://lodash.com/license>
+ */
+var debounce = _dereq_('lodash.debounce');
 
+/** Used as the `TypeError` message for "Functions" methods. */
+var FUNC_ERROR_TEXT = 'Expected a function';
+
+/**
+ * Creates a throttled function that only invokes `func` at most once per
+ * every `wait` milliseconds. The throttled function comes with a `cancel`
+ * method to cancel delayed invocations. Provide an options object to indicate
+ * that `func` should be invoked on the leading and/or trailing edge of the
+ * `wait` timeout. Subsequent calls to the throttled function return the
+ * result of the last `func` call.
+ *
+ * **Note:** If `leading` and `trailing` options are `true`, `func` is invoked
+ * on the trailing edge of the timeout only if the the throttled function is
+ * invoked more than once during the `wait` timeout.
+ *
+ * See [David Corbacho's article](http://drupalmotion.com/article/debounce-and-throttle-visual-explanation)
+ * for details over the differences between `_.throttle` and `_.debounce`.
+ *
+ * @static
+ * @memberOf _
+ * @category Function
+ * @param {Function} func The function to throttle.
+ * @param {number} [wait=0] The number of milliseconds to throttle invocations to.
+ * @param {Object} [options] The options object.
+ * @param {boolean} [options.leading=true] Specify invoking on the leading
+ *  edge of the timeout.
+ * @param {boolean} [options.trailing=true] Specify invoking on the trailing
+ *  edge of the timeout.
+ * @returns {Function} Returns the new throttled function.
+ * @example
+ *
+ * // avoid excessively updating the position while scrolling
+ * jQuery(window).on('scroll', _.throttle(updatePosition, 100));
+ *
+ * // invoke `renewToken` when the click event is fired, but not more than once every 5 minutes
+ * jQuery('.interactive').on('click', _.throttle(renewToken, 300000, {
+ *   'trailing': false
+ * }));
+ *
+ * // cancel a trailing throttled call
+ * jQuery(window).on('popstate', throttled.cancel);
+ */
+function throttle(func, wait, options) {
+  var leading = true,
+      trailing = true;
+
+  if (typeof func != 'function') {
+    throw new TypeError(FUNC_ERROR_TEXT);
+  }
+  if (options === false) {
+    leading = false;
+  } else if (isObject(options)) {
+    leading = 'leading' in options ? !!options.leading : leading;
+    trailing = 'trailing' in options ? !!options.trailing : trailing;
+  }
+  return debounce(func, wait, { 'leading': leading, 'maxWait': +wait, 'trailing': trailing });
+}
+
+/**
+ * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+ * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(1);
+ * // => false
+ */
+function isObject(value) {
+  // Avoid a V8 JIT bug in Chrome 19-20.
+  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+  var type = typeof value;
+  return !!value && (type == 'object' || type == 'function');
+}
+
+module.exports = throttle;
+
+},{"lodash.debounce":3}],3:[function(_dereq_,module,exports){
+/**
+ * lodash 3.1.1 (Custom Build) <https://lodash.com/>
+ * Build: `lodash modern modularize exports="npm" -o ./`
+ * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ * Available under MIT license <https://lodash.com/license>
+ */
+var getNative = _dereq_('lodash._getnative');
+
+/** Used as the `TypeError` message for "Functions" methods. */
+var FUNC_ERROR_TEXT = 'Expected a function';
+
+/* Native method references for those with the same name as other `lodash` methods. */
+var nativeMax = Math.max,
+    nativeNow = getNative(Date, 'now');
+
+/**
+ * Gets the number of milliseconds that have elapsed since the Unix epoch
+ * (1 January 1970 00:00:00 UTC).
+ *
+ * @static
+ * @memberOf _
+ * @category Date
+ * @example
+ *
+ * _.defer(function(stamp) {
+ *   console.log(_.now() - stamp);
+ * }, _.now());
+ * // => logs the number of milliseconds it took for the deferred function to be invoked
+ */
+var now = nativeNow || function() {
+  return new Date().getTime();
+};
+
+/**
+ * Creates a debounced function that delays invoking `func` until after `wait`
+ * milliseconds have elapsed since the last time the debounced function was
+ * invoked. The debounced function comes with a `cancel` method to cancel
+ * delayed invocations. Provide an options object to indicate that `func`
+ * should be invoked on the leading and/or trailing edge of the `wait` timeout.
+ * Subsequent calls to the debounced function return the result of the last
+ * `func` invocation.
+ *
+ * **Note:** If `leading` and `trailing` options are `true`, `func` is invoked
+ * on the trailing edge of the timeout only if the the debounced function is
+ * invoked more than once during the `wait` timeout.
+ *
+ * See [David Corbacho's article](http://drupalmotion.com/article/debounce-and-throttle-visual-explanation)
+ * for details over the differences between `_.debounce` and `_.throttle`.
+ *
+ * @static
+ * @memberOf _
+ * @category Function
+ * @param {Function} func The function to debounce.
+ * @param {number} [wait=0] The number of milliseconds to delay.
+ * @param {Object} [options] The options object.
+ * @param {boolean} [options.leading=false] Specify invoking on the leading
+ *  edge of the timeout.
+ * @param {number} [options.maxWait] The maximum time `func` is allowed to be
+ *  delayed before it is invoked.
+ * @param {boolean} [options.trailing=true] Specify invoking on the trailing
+ *  edge of the timeout.
+ * @returns {Function} Returns the new debounced function.
+ * @example
+ *
+ * // avoid costly calculations while the window size is in flux
+ * jQuery(window).on('resize', _.debounce(calculateLayout, 150));
+ *
+ * // invoke `sendMail` when the click event is fired, debouncing subsequent calls
+ * jQuery('#postbox').on('click', _.debounce(sendMail, 300, {
+ *   'leading': true,
+ *   'trailing': false
+ * }));
+ *
+ * // ensure `batchLog` is invoked once after 1 second of debounced calls
+ * var source = new EventSource('/stream');
+ * jQuery(source).on('message', _.debounce(batchLog, 250, {
+ *   'maxWait': 1000
+ * }));
+ *
+ * // cancel a debounced call
+ * var todoChanges = _.debounce(batchLog, 1000);
+ * Object.observe(models.todo, todoChanges);
+ *
+ * Object.observe(models, function(changes) {
+ *   if (_.find(changes, { 'user': 'todo', 'type': 'delete'})) {
+ *     todoChanges.cancel();
+ *   }
+ * }, ['delete']);
+ *
+ * // ...at some point `models.todo` is changed
+ * models.todo.completed = true;
+ *
+ * // ...before 1 second has passed `models.todo` is deleted
+ * // which cancels the debounced `todoChanges` call
+ * delete models.todo;
+ */
+function debounce(func, wait, options) {
+  var args,
+      maxTimeoutId,
+      result,
+      stamp,
+      thisArg,
+      timeoutId,
+      trailingCall,
+      lastCalled = 0,
+      maxWait = false,
+      trailing = true;
+
+  if (typeof func != 'function') {
+    throw new TypeError(FUNC_ERROR_TEXT);
+  }
+  wait = wait < 0 ? 0 : (+wait || 0);
+  if (options === true) {
+    var leading = true;
+    trailing = false;
+  } else if (isObject(options)) {
+    leading = !!options.leading;
+    maxWait = 'maxWait' in options && nativeMax(+options.maxWait || 0, wait);
+    trailing = 'trailing' in options ? !!options.trailing : trailing;
+  }
+
+  function cancel() {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    if (maxTimeoutId) {
+      clearTimeout(maxTimeoutId);
+    }
+    lastCalled = 0;
+    maxTimeoutId = timeoutId = trailingCall = undefined;
+  }
+
+  function complete(isCalled, id) {
+    if (id) {
+      clearTimeout(id);
+    }
+    maxTimeoutId = timeoutId = trailingCall = undefined;
+    if (isCalled) {
+      lastCalled = now();
+      result = func.apply(thisArg, args);
+      if (!timeoutId && !maxTimeoutId) {
+        args = thisArg = undefined;
+      }
+    }
+  }
+
+  function delayed() {
+    var remaining = wait - (now() - stamp);
+    if (remaining <= 0 || remaining > wait) {
+      complete(trailingCall, maxTimeoutId);
+    } else {
+      timeoutId = setTimeout(delayed, remaining);
+    }
+  }
+
+  function maxDelayed() {
+    complete(trailing, timeoutId);
+  }
+
+  function debounced() {
+    args = arguments;
+    stamp = now();
+    thisArg = this;
+    trailingCall = trailing && (timeoutId || !leading);
+
+    if (maxWait === false) {
+      var leadingCall = leading && !timeoutId;
+    } else {
+      if (!maxTimeoutId && !leading) {
+        lastCalled = stamp;
+      }
+      var remaining = maxWait - (stamp - lastCalled),
+          isCalled = remaining <= 0 || remaining > maxWait;
+
+      if (isCalled) {
+        if (maxTimeoutId) {
+          maxTimeoutId = clearTimeout(maxTimeoutId);
+        }
+        lastCalled = stamp;
+        result = func.apply(thisArg, args);
+      }
+      else if (!maxTimeoutId) {
+        maxTimeoutId = setTimeout(maxDelayed, remaining);
+      }
+    }
+    if (isCalled && timeoutId) {
+      timeoutId = clearTimeout(timeoutId);
+    }
+    else if (!timeoutId && wait !== maxWait) {
+      timeoutId = setTimeout(delayed, wait);
+    }
+    if (leadingCall) {
+      isCalled = true;
+      result = func.apply(thisArg, args);
+    }
+    if (isCalled && !timeoutId && !maxTimeoutId) {
+      args = thisArg = undefined;
+    }
+    return result;
+  }
+  debounced.cancel = cancel;
+  return debounced;
+}
+
+/**
+ * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+ * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(1);
+ * // => false
+ */
+function isObject(value) {
+  // Avoid a V8 JIT bug in Chrome 19-20.
+  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+  var type = typeof value;
+  return !!value && (type == 'object' || type == 'function');
+}
+
+module.exports = debounce;
+
+},{"lodash._getnative":4}],4:[function(_dereq_,module,exports){
+/**
+ * lodash 3.9.1 (Custom Build) <https://lodash.com/>
+ * Build: `lodash modern modularize exports="npm" -o ./`
+ * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ * Available under MIT license <https://lodash.com/license>
+ */
+
+/** `Object#toString` result references. */
+var funcTag = '[object Function]';
+
+/** Used to detect host constructors (Safari > 5). */
+var reIsHostCtor = /^\[object .+?Constructor\]$/;
+
+/**
+ * Checks if `value` is object-like.
+ *
+ * @private
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+ */
+function isObjectLike(value) {
+  return !!value && typeof value == 'object';
+}
+
+/** Used for native method references. */
+var objectProto = Object.prototype;
+
+/** Used to resolve the decompiled source of functions. */
+var fnToString = Function.prototype.toString;
+
+/** Used to check objects for own properties. */
+var hasOwnProperty = objectProto.hasOwnProperty;
+
+/**
+ * Used to resolve the [`toStringTag`](http://ecma-international.org/ecma-262/6.0/#sec-object.prototype.tostring)
+ * of values.
+ */
+var objToString = objectProto.toString;
+
+/** Used to detect if a method is native. */
+var reIsNative = RegExp('^' +
+  fnToString.call(hasOwnProperty).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+  .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+);
+
+/**
+ * Gets the native function at `key` of `object`.
+ *
+ * @private
+ * @param {Object} object The object to query.
+ * @param {string} key The key of the method to get.
+ * @returns {*} Returns the function if it's native, else `undefined`.
+ */
+function getNative(object, key) {
+  var value = object == null ? undefined : object[key];
+  return isNative(value) ? value : undefined;
+}
+
+/**
+ * Checks if `value` is classified as a `Function` object.
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+ * @example
+ *
+ * _.isFunction(_);
+ * // => true
+ *
+ * _.isFunction(/abc/);
+ * // => false
+ */
+function isFunction(value) {
+  // The use of `Object#toString` avoids issues with the `typeof` operator
+  // in older versions of Chrome and Safari which return 'function' for regexes
+  // and Safari 8 equivalents which return 'object' for typed array constructors.
+  return isObject(value) && objToString.call(value) == funcTag;
+}
+
+/**
+ * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+ * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+ * @example
+ *
+ * _.isObject({});
+ * // => true
+ *
+ * _.isObject([1, 2, 3]);
+ * // => true
+ *
+ * _.isObject(1);
+ * // => false
+ */
+function isObject(value) {
+  // Avoid a V8 JIT bug in Chrome 19-20.
+  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+  var type = typeof value;
+  return !!value && (type == 'object' || type == 'function');
+}
+
+/**
+ * Checks if `value` is a native function.
+ *
+ * @static
+ * @memberOf _
+ * @category Lang
+ * @param {*} value The value to check.
+ * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+ * @example
+ *
+ * _.isNative(Array.prototype.push);
+ * // => true
+ *
+ * _.isNative(_);
+ * // => false
+ */
+function isNative(value) {
+  if (value == null) {
+    return false;
+  }
+  if (isFunction(value)) {
+    return reIsNative.test(fnToString.call(value));
+  }
+  return isObjectLike(value) && reIsHostCtor.test(value);
+}
+
+module.exports = getNative;
+
+},{}]},{},[1])(1)
+});
