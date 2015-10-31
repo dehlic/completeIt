@@ -14,6 +14,9 @@ and with an aggressive caching mechanism.
 The only dependency is [`lodash.throttle`](https://lodash.com/).
 
 CompleteIt.js is built with [Brunch](http://brunch.io).
+CompleteIt.js uses the Rosetta Stone "[Hello Javascript](https://github.com/nolanlawson/hello-javascript)"
+to build its code for distribution.
+
 
 ## Usage Example
 
@@ -25,6 +28,33 @@ var CompleteIt = require('complete-it');
 var form = document.body.querySelector('#autocomplete');
 CompleteIt.init(form);
 ```
+
+```html
+<form id="autocomplete" action="http://www.example.org/search">
+  <input type="text"
+    name="q"
+    placeholder="search"
+    autocomplete="off"
+    autocapitalize="off">
+</form>
+```
+
+### npm
+```javascript
+npm install complete-it
+```
+
+### Bower
+```javascript
+bower install complete-it
+```
+And the use the `dist/complete-it.js` as a `<script>` tag.
+
+### Direct download
+Download and use the unminified `complete-it.js` or the minified `complete-it.min.js`
+file from [releases page](https://github.com/dehlic/completeIt/releases).
+
+Bower and direct download also contains dependencies.
 
 ## Options
 
@@ -100,7 +130,7 @@ CompleteIt.init(form, {
 });
 ```
 
-## middleware
+## Middleware
 
 CompleteIt.js is designed only to provide an UI for the autocomplete and for throttle and cache
 the remote queries. 
@@ -112,7 +142,7 @@ To uniform your result with the form requested by the library you have the `midd
 It accepts, two parameters (`results`, the response received from the query and `input`, the current
 input value).
 With this option you can also manipulate the order and form of your results, if you need to do it at
-client side.
+client side. You can, for example, also limit your results at client side.
 
 ### Standard form of response
 
@@ -130,7 +160,7 @@ This is the array of object that ***MUST*** return from `middleware`.
 ]
 ```
 
-### middleware basic example
+### Middleware basic example
 
 This example simply change the content key. The response objects contains the autocompleted result
 in the `text` key that will be changed to the required `content` key, using [lodash](https://lodash.com/) `map` method.
@@ -195,6 +225,10 @@ npm install
 npm start
 ```
 
+## Building
+
+`npm run build` will build the library to `dist` and `dist-node`.
+
 ## Browser support
 
 * IE10+ (`classList` support is missing in IE<10. Extend support with [polyfill](https://github.com/eligrey/classList.js)
@@ -204,7 +238,8 @@ npm start
 * Opera 11.5+
 
 ```
-Happy [autocom               ] [GO!]
+Happy [autoco                ] [GO!]
+      |autocoding            |
       |autocomplete          |
       |autocompleting results|
       |autocompleting stuff  |
