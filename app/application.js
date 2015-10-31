@@ -6,6 +6,11 @@
 
 'use strict';
 
+/*
+ * this strange dep requiring is needed to make lib working when 'brunching'
+ * and building. :)
+ */
+
 var throttle;
 if (typeof _ !== 'undefined') {
   throttle = _.throttle;
