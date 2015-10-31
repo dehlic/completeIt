@@ -1,8 +1,9 @@
 {
   "name": "complete-it",
   "description": "A simple autocomplete lib with an aggressive cache system.",
-  "author": "Lucio Baglione (coire1@gmail.com)",
+  "author": "Lucio Baglione <coire1@gmail.com>",
   "version": "0.0.1",
+  "license": "Apache-2.0",
   "main": "dist-node/complete-it.js",
   "jsnext:main": "dist-node/complete-it.js",
   "jspm": {
@@ -23,6 +24,16 @@
     "build": "npm run clean && npm run build-node && npm run build-browser",
     "prepublish": "npm run build"
   },
+  "bugs": {
+    "url": "https://github.com/dehlic/completeIt/issues"
+  },
+  "keywords": [
+    "autocomplete",
+    "cache",
+    "search",
+    "ajax",
+    "throttle"
+  ],
   "dependencies": {
     "lodash.throttle": "~3.0.4"
   },

@@ -8,6 +8,19 @@
   "main": "dist/complete-it.js",
   "homepage": "https://github.com/dehlic/completeIt",
   "license": "Apache-2.0",
+  "moduleType": [
+    "amd",
+    "umd",
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "autocomplete",
+    "cache",
+    "search",
+    "ajax",
+    "throttle"
+  ],
   "ignore": [
     "**/.*",
     "node_modules",
